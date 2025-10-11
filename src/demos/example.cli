@@ -1,0 +1,29 @@
+user[].STR
+mode[].STR
+@"about" {}
+@"create" {
+    name["name",'n'].STR | path["path",'p'].PATH
+    ~log["log",'l'].PATH
+    ~mode["mode",'m'].STR<"fast"|"precise">
+}
+@"open" {
+    name[].STR | path[].PATH
+    ~rgba["base-color",'c'].(INT|FLOAT).(INT|FLOAT).(INT|FLOAT).~(INT|FLOAT)
+}
+@"compress" {
+    name[].STR | path[].PATH
+    ~level[].(INT|STR<"light"|"medium"|"heavy">)
+}
+@"clone" {
+    input["input",'i'].PATH
+    output["output",'o'].PATH
+    ~level["level",'L'].STR<"shallow"|"deep">
+}
+@"delete" {
+    ~level["level",'L'].STR<"shallow"|"deep"|"wipe">
+    ~backup["bak","backup",'b'].PATH.~INT
+}
+~verbose["verbose",'v']
+~debug["debug",'d']
+~vers["version",'V']
+~help["help",'h']

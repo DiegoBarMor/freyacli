@@ -1,0 +1,10 @@
+.vscode/
+*__pycache__*
+desktop.ini
+tmp/
+build/
+dist/
+*egg-info/
+debug.sh
+build.sh
+upload.sh
