@@ -12,7 +12,7 @@ mode[].STR
 }
 @"compress" {
     name[].STR | path[].PATH
-    ~level[].(INT|STR<"light"|"medium"|"heavy">)
+    ~level["level", 'L'].(INT|STR<"light"|"medium"|"heavy">) | algorithm["algorithm", 'a'].STR<"bz2"|"gz">
 }
 @"clone" {
     input["input",'i'].PATH
@@ -20,7 +20,8 @@ mode[].STR
     ~level["level",'L'].STR<"shallow"|"deep">
 }
 @"delete" {
-    ~level["level",'L'].STR<"shallow"|"deep"|"wipe">
+    name[].STR | path[].PATH
+    ~level[].STR<"shallow"|"deep"|"wipe">
     ~backup["bak","backup",'b'].PATH.~INT
 }
 ~verbose["verbose",'v']

@@ -14,7 +14,7 @@ class App:
         self._parser_help = fy.ParserHelp(str_help)
 
         self._parser_cli.parse()
-        self._parser_help.parse()
+        # self._parser_help.parse()
 
     # --------------------------------------------------------------------------
 
