@@ -1,8 +1,12 @@
 from setuptools import setup, find_packages
+from pathlib import Path
+
+__version__: str
+exec(Path("freyacli/_version.py").read_text())
 
 setup(
-    name="freya-cli",
-    version="0.1.0",
+    name="freyacli",
+    version=__version__,
     description="A CLI framework for Python",
     keywords="cli terminal user interface",
     long_description=open("README.md").read(),
@@ -11,8 +15,7 @@ setup(
     author_email="diegobarmor42@gmail.com",
     url="https://github.com/diegobarmor/freya-cli",
     license="MIT",
-    package_dir={"": "src"},
-    packages=find_packages(where="src"),
+    packages=find_packages(),
     install_requires=[],
     classifiers=[
         "Programming Language :: Python :: 3",

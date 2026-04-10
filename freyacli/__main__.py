@@ -1,10 +1,14 @@
-from _mods.allow_root_imports import *
+import sys
+from pathlib import Path
 
-import freyacli as fy
+# ------------------------------------------------------------------------------
+def main():
+    ...
+
 
 ################################################################################
 if __name__ == "__main__":
-    app = fy.App("src/demos/example.cli", "src/demos/example.help")
+    main()
 
 
 ################################################################################

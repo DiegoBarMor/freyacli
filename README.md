@@ -1,1 +1,1 @@
-# freya-cli
+# freyacli
