@@ -1,0 +1,68 @@
+### comments start with the # char
+
+### subcommands section for the root app starts here
+@apbs
+    # path_pdb[].PATH
+    # ~conv2mrc["mrc"].BOOL=false
+    # ~keep_pqr["pqr"].BOOL=false
+    # ~verbose["verbose"].BOOL=false
+    ### leaving the bracket empty just keeps all arguments as "unparsed"
+!@
+@smiffer
+    ### subcommands section for the "smiffer" sub-app starts here
+    @prot    !use:_smif_mode !@
+    @rna     !use:_smif_mode !@
+    @ligand  !use:_smif_mode !@
+!@
+@vgtools
+    ### subcommands section for the "vgtools" sub-app starts here
+    @convert
+        path_in[].PATH
+        ~out_dx['d',"dx"].~PATH
+        ~out_mrc['m',"mrc"].~PATH
+        ~out_ccp4['p',"ccp4"].~PATH
+        ~out_cmap['c',"cmap"].~PATH
+    !@
+    @pack
+        paths_in[].PATH(*)
+        path_out['o',"out"].PATH
+    !@
+    @unpack
+        path_in[].PATH
+        ~folder_out[].PATH
+    !@
+    @fix_cmap
+        !use:_io_simple
+    !@
+    @average
+        !use:_io_simple
+    !@
+    @summary
+        path_in[].PATH
+    !@
+    @compare
+        path_0[].PATH
+        path_1[].PATH
+        ~threshold['t',"threshold"].FLOAT=1e-3
+    !@
+    @rotate
+        !use:_io_simple
+        ~x['x',"--yz"].FLOAT
+        ~y['y',"--xz"].FLOAT
+        ~z['z',"--xy"].FLOAT
+    !@
+!@
+
+### macros can be placed anywhere, even at the end
+### just don't place macro definitions inside other macro definitions
+!def _smif_mode
+    path_pdb[].PATH
+    ~folder_out['o',"out"].PATH=.
+    ~path_traj['t',"traj"].PATH
+    ~path_apbs['a',"apbs"].PATH
+    ~path_chem['b',"table"].PATH
+    ~configs['c',"config"].STR(*)
+    ~sphere['s',"sphere"].FLOAT(4)
+!fed
+
+!def _io_simple path_in[].PATH path_out[].PATH !fed
