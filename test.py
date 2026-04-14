@@ -1,10 +1,146 @@
 from pathlib import Path
 
+from enum import Enum, auto
+
+# //////////////////////////////////////////////////////////////////////////////
+class FlagType(Enum):
+    BOOL  = auto()
+    STR   = auto()
+    PATH  = auto()
+    FLOAT = auto()
+    INT   = auto()
+
+    # --------------------------------------------------------------------------
+    @classmethod
+    def from_str(cls, s: str) -> "FlagType":
+        s = s.lower()
+        if not s:        return cls.BOOL
+        if s == "bool":  return cls.BOOL
+        if s == "str":   return cls.STR
+        if s == "path":  return cls.PATH
+        if s == "float": return cls.FLOAT
+        if s == "int":   return cls.INT
+        CLIFileError.parsing_err(f"Invalid flag type specified: '{s}'")
+
+
 # //////////////////////////////////////////////////////////////////////////////
 class CLIFileError(SyntaxError):
+    # --------------------------------------------------------------------------
     @classmethod
     def parsing_err(cls, msg: str):
-        raise CLIFileError(f"Error parsing CLI file string: {msg}")
+        raise cls(f"Error parsing CLI file string: {msg}")
+
+    # --------------------------------------------------------------------------
+    @classmethod
+    def assert_split(cls, s: str, char_split: str, expected_len: int):
+        splitted = s.split(char_split)
+        if len(splitted) == expected_len: return splitted
+        cls.parsing_err(f"Invalid substring found inside argument rule: '{s}'")
+
+
+# //////////////////////////////////////////////////////////////////////////////
+class ArgumentRule:
+    def __init__(self, raw_rule: str):
+        self._raw_rule = raw_rule
+        self.is_optional: bool
+        self.name: str
+        self.is_positional: bool
+        self.flag_short: str
+        self.flag_long: str
+        self.kw_is_optional: bool
+        self.kw_default_val: str
+        self.flag_type: FlagType
+        self.n_args: int
+
+        self.is_optional = raw_rule.startswith('~')
+        self._parse_flag_type(self._parse_kwarg_details(self._parse_flags(self._parse_name(raw_rule))))
+
+
+    # --------------------------------------------------------------------------
+    def __repr__(self):
+        return f"Arg(opt={self.is_optional} posit={self.is_positional} fs={self.flag_short} fl={self.flag_long} "+\
+            f"opt_kw={self.kw_is_optional} default={self.kw_default_val} ftype={self.flag_type} nargs={self.n_args})"
+
+
+    # --------------------------------------------------------------------------
+    def _parse_name(self, buffer: str) -> str:
+        name, buffer = CLIFileError.assert_split(buffer, '[', 2)
+        self.name = name[int(self.is_optional):]
+        return buffer
+
+
+    # --------------------------------------------------------------------------
+    def _parse_flags(self, buffer: str) -> str:
+        flags, buffer = CLIFileError.assert_split(buffer, ']', 2)
+        self.is_positional = not flags
+
+        if self.is_positional:
+            self.flag_short = ""
+            self.flag_long = ""
+            return buffer
+
+        self.flag_short, self.flag_long = CLIFileError.assert_split(flags, ',', 2)
+        if len(self.flag_short) > 1:
+            CLIFileError.parsing_err(f"Short flags should be 1 character long, but got '{self.flag_short}'.")
+
+        return buffer
+
+
+    # --------------------------------------------------------------------------
+    def _parse_kwarg_details(self, buffer: str) -> str:
+        if not buffer.startswith('.'):
+            CLIFileError.parsing_err(f"Missing '.' delimiter in argument rule: '{self._raw_rule}'")
+
+        if buffer == '.':
+            self.kw_is_optional = False
+            self.kw_default_val = ""
+            return ""
+
+        self.kw_is_optional = buffer[1] == '~'
+        buffer = buffer[int(self.kw_is_optional)+1:]
+
+        splitted = buffer.split('=')
+        if len(splitted) == 1:
+            self.kw_default_val = ""
+            return splitted[0]
+
+        if len(splitted) != 2:
+            CLIFileError.parsing_err(f"Invalid argument rule format: '{self._raw_rule}'")
+
+        buffer, self.kw_default_val = splitted
+        return buffer
+
+
+    # --------------------------------------------------------------------------
+    def _parse_flag_type(self, buffer: str) -> None:
+        if not buffer:
+            self.n_args = int(self.is_positional)
+            self.flag_type = FlagType.BOOL
+            return
+
+        splitted = buffer.split(':')
+        if len(splitted) > 2:
+            CLIFileError.parsing_err(f"Invalid argument rule format: '{self._raw_rule}'")
+
+        if len(splitted) == 1:
+            str_flag_type = splitted[0]
+            flag_type = FlagType.from_str(str_flag_type)
+            str_n_args = str(int(flag_type != FlagType.BOOL))
+        else:
+            str_flag_type, str_n_args = splitted
+            flag_type = FlagType.from_str(str_flag_type)
+
+
+        self.flag_type = flag_type
+
+        if str_n_args == '*':
+            self.n_args = -1
+            return
+
+        try:
+            self.n_args = int(str_n_args)
+        except ValueError:
+            CLIFileError.parsing_err(f"Invalid number of arguments specified: '{str_n_args}'")
 
 
 # //////////////////////////////////////////////////////////////////////////////
@@ -14,6 +150,7 @@ class Node:
         self.parent: "Node|None" = parent
         self.children: dict[str, "Node"] = {}
         self.depth = 0 if parent is None else parent.depth + 1
+        self.contents: dict[str, ArgumentRule] = {}
 
     # --------------------------------------------------------------------------
     def __repr__(self):
@@ -23,7 +160,7 @@ class Node:
     # --------------------------------------------------------------------------
     def __getitem__(self, name: str) -> "Node":
         if name not in self.children:
-            CLIFileError.parsing_err(f"Argument '{name}' is not defined in the CLI rules.")
+            CLIFileError.parsing_err(f"Branch '{name}' is not defined in the CLI rules.")
         return self.children[name]
 
     # --------------------------------------------------------------------------
@@ -36,13 +173,14 @@ class Node:
     # --------------------------------------------------------------------------
     def _assert_unique_child(self, name: str):
         if name in self.children:
-            CLIFileError.parsing_err(f"Duplicate argument '{name}' specified inside the same branch.")
+            CLIFileError.parsing_err(f"Duplicate child branch '{name}' specified inside the same branch.")
 
 
 # //////////////////////////////////////////////////////////////////////////////
 class FyRulesParser:
     def __init__(self, rules: str):
         rules = self._preprocess_cli_rules(rules)
+        print(rules)
         self.tree = Node('', None)
         self.build_rules_tree(rules)
 
@@ -67,7 +205,15 @@ class FyRulesParser:
                 node = node.parent
                 continue
 
-            # [WIP]
+            arg = ArgumentRule(token)
+            if arg.name in node.contents:
+                CLIFileError.parsing_err(f"Duplicate definition of '{arg}' argument rule")
+
+            node.contents[arg.name] = arg
+
+        if node != self.tree:
+            CLIFileError.parsing_err(f"Unterminated branch (missing !@ keyword {node.depth} times)")
+
 
 
     # --------------------------------------------------------------------------
@@ -94,12 +240,13 @@ class FyRulesParser:
         # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
         def get_macros(s: str) -> dict[str, str]:
             macros = {}
-            s = s.lower()
-            while s:
-                idxs = get_next_macro_idxs(s)
+            s_lower = s.lower()
+            while s_lower:
+                idxs = get_next_macro_idxs(s_lower)
                 if idxs is None: break
                 macro_split = get_text_inside_macro(s, idxs).split()
                 s = get_text_around_macro(s, idxs)
+                s_lower = get_text_around_macro(s_lower, idxs)
 
                 if not macro_split:
                     CLIFileError.parsing_err("A !def macro is missing its name.")
@@ -139,14 +286,14 @@ class FyRulesParser:
         )
 
 
-    # --------------------------------------------------------------------------
-
-
 ################################################################################
 if __name__ == "__main__":
     parser = FyRulesParser.read_cli("new.cli")
-    print(parser.tree)
-    print(parser.tree["vgtools"]["pack"])
+    print(*parser.tree["smiffer"]["rna"].contents.items(), sep = '\n')
+    print()
+    print(*parser.tree["vgtools"]["convert"].contents.items(), sep = '\n')
+    print()
+    print(*parser.tree["vgtools"]["compare"].contents.items(), sep = '\n')
 
 
 ################################################################################
