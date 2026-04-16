@@ -2,10 +2,10 @@
 
 ### subcommands section for the root app starts here
 @apbs
-    # path_pdb[].PATH
-    # ~conv2mrc[,mrc].BOOL=false
-    # ~keep_pqr[,pqr].BOOL=false
-    # ~verbose[,verbose].BOOL=false
+    # path_pdb[]1.PATH
+    # ~conv2mrc[,mrc]
+    # ~keep_pqr[,pqr]
+    # ~verbose[,verbose]
     ### leaving the bracket empty just keeps all arguments as "unparsed"
 !@
 @smiffer
@@ -17,19 +17,19 @@
 @vgtools
     ### subcommands section for the "vgtools" sub-app starts here
     @convert
-        path_in[].PATH
-        ~out_dx[d,dx].~PATH
-        ~out_mrc[m,mrc].~PATH
-        ~out_ccp4[p,ccp4].~PATH
-        ~out_cmap[c,cmap].~PATH
+        path_in[]1.PATH
+        ~out_dx[d,dx]~1.PATH
+        ~out_mrc[m,mrc]~1.PATH
+        ~out_ccp4[p,ccp4]~1.PATH
+        ~out_cmap[c,cmap]~1.PATH
     !@
     @pack
-        paths_in[].PATH:*
-        path_out[o,out].PATH
+        paths_in[]*.PATH
+        path_out[o,out]1.PATH
     !@
     @unpack
-        path_in[].PATH
-        ~folder_out[].PATH
+        path_in[]1.PATH
+        ~folder_out[]1.PATH
     !@
     @fix_cmap
         !use:_io_simple
@@ -38,31 +38,31 @@
         !use:_io_simple
     !@
     @summary
-        path_in[].PATH
+        path_in[]1.PATH
     !@
     @compare
-        path_0[].PATH
-        path_1[].PATH
-        ~threshold[t,threshold].FLOAT=1e-3
+        path_0[]1.PATH
+        path_1[]1.PATH
+        ~threshold[t,threshold]1.FLOAT=1e-3
     !@
     @rotate
         !use:_io_simple
-        ~x[x,yz].FLOAT
-        ~y[y,xz].FLOAT
-        ~z[z,xy].FLOAT
+        ~x[x,yz]1.FLOAT
+        ~y[y,xz]1.FLOAT
+        ~z[z,xy]1.FLOAT
     !@
 !@
 
 ### macros can be placed anywhere, even at the end
 ### just dont place macro definitions inside other macro definitions
 !def _smif_mode
-    path_pdb[].PATH
-    ~folder_out[o,out].PATH=.
-    ~path_traj[t,traj].PATH
-    ~path_apbs[a,apbs].PATH
-    ~path_chem[b,table].PATH
-    ~configs[c,config].STR:*
-    ~sphere[s,sphere].FLOAT:4
+    path_pdb[]1.PATH
+    ~folder_out[o,out]1.PATH=.
+    ~path_traj[t,traj]1.PATH
+    ~path_apbs[a,apbs]1.PATH
+    ~path_chem[b,table]1.PATH
+    ~configs[c,config]*.STR
+    ~sphere[s,sphere]4.FLOAT
 !fed
 
-!def _io_simple path_in[].PATH path_out[].PATH !fed
+!def _io_simple path_in[]1.PATH path_out[]1.PATH !fed
