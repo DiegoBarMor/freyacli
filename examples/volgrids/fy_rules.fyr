@@ -1,18 +1,16 @@
-### comments start with the # char
-
 ### subcommands section for the root app starts here
+@smiffer
+    ### subcommands section for the "smiffer" sub-app starts here
+    @prot   !use:_smif_mode !@
+    @rna    !use:_smif_mode !@
+    @ligand !use:_smif_mode !@
+!@
 @apbs
     # path_pdb[]1.PATH
     # ~conv2mrc[,mrc]
     # ~keep_pqr[,pqr]
     # ~verbose[,verbose]
     ### leaving the bracket empty just keeps all arguments as "unparsed"
-!@
-@smiffer
-    ### subcommands section for the "smiffer" sub-app starts here
-    @prot    !use:_smif_mode !@
-    @rna     !use:_smif_mode !@
-    @ligand  !use:_smif_mode !@
 !@
 @vgtools
     ### subcommands section for the "vgtools" sub-app starts here
@@ -52,6 +50,11 @@
         ~z[z,xy]1.FLOAT
     !@
 !@
+@smutils
+    @resids_nonbp
+        path_in[]1.PATH
+    !@
+!@
 
 ### macros can be placed anywhere, even at the end
 ### just dont place macro definitions inside other macro definitions
@@ -61,8 +64,10 @@
     ~path_traj[t,traj]1.PATH
     ~path_apbs[a,apbs]1.PATH
     ~path_chem[b,table]1.PATH
-    ~configs[c,config]*.STR
+    ~configs[c,config]~*.STR
     ~sphere[s,sphere]4.FLOAT
+    ~resids[i,resids]*.STR
 !fed
 
+### one-liners are also allowed, as long as spacing rules are respected
 !def _io_simple path_in[]1.PATH path_out[]1.PATH !fed

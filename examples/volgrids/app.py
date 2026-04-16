@@ -284,7 +284,8 @@ class FYRParser:
 
 ################################################################################
 if __name__ == "__main__":
-    parser = FYRParser.read_cli("new.cli")
+    dir_example = Path(__file__).parent
+    parser = FYRParser.read_cli(dir_example / "fy_rules.fyr")
     print(*parser.tree["smiffer"]["rna"].rules.items(), sep = '\n')
     print()
     print(*parser.tree["vgtools"]["convert"].rules.items(), sep = '\n')
