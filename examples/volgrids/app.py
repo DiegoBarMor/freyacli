@@ -3,6 +3,12 @@ from pathlib import Path
 from enum import Enum, auto
 
 # //////////////////////////////////////////////////////////////////////////////
+class FYRSyntaxError(SyntaxError):
+    def __init__(self, msg):
+        super().__init__(f"Error parsing FYR string. {msg}")
+
+
+# //////////////////////////////////////////////////////////////////////////////
 class FlagType(Enum):
     BOOL  = auto()
     STR   = auto()
@@ -19,119 +25,109 @@ class FlagType(Enum):
         if s == "path":  return cls.PATH
         if s == "float": return cls.FLOAT
         if s == "int":   return cls.INT
-        CLIFileError.parsing_err(f"Invalid flag type specified: '{s}'")
+        raise FYRSyntaxError(f"Invalid flag type specified: '{s}'")
 
 
 # //////////////////////////////////////////////////////////////////////////////
-class CLIFileError(SyntaxError):
-    # --------------------------------------------------------------------------
-    @classmethod
-    def parsing_err(cls, msg: str):
-        raise cls(f"Error parsing CLI file string: {msg}")
-
-    # --------------------------------------------------------------------------
-    @classmethod
-    def assert_split(cls, s: str, char_split: str, expected_len: int):
-        splitted = s.split(char_split)
-        if len(splitted) == expected_len: return splitted
-        cls.parsing_err(f"Invalid substring found inside argument rule: '{s}'")
-
-
-# //////////////////////////////////////////////////////////////////////////////
-class ArgumentRule:
+class Rule:
     def __init__(self, raw_rule: str):
         self._raw_rule = raw_rule
-        self.is_optional: bool
+        self._raw_user_value: str = ""
+
         self.name: str
         self.is_positional: bool
+        self.is_optional: bool
+        self.kw_is_optional: bool
         self.flag_short: str
         self.flag_long: str
-        self.kw_is_optional: bool
-        self.kw_default_val: str
+        self.default_value: str
         self.flag_type: FlagType
         self.n_args: int
 
         self.is_optional = raw_rule.startswith('~')
-        self._parse_flag_type(self._parse_n_args(
-            self._parse_flags(self._parse_name(
-                self._parse_default_value(raw_rule)
-            ))
-        ))
+
+        (buffer,
+            self.default_value
+        ) = self._parse_default_value(raw_rule)
+
+        (buffer,
+            self.name
+        ) = self._parse_name(buffer)
+
+        (buffer,
+            self.is_positional,
+            self.flag_short,
+            self.flag_long
+        ) = self._parse_flags(buffer)
+
+        (buffer,
+            self.kw_is_optional,
+            self.n_args
+        ) = self._parse_n_args(buffer)
+
+        self.flag_type = FlagType.from_str(buffer)
 
 
     # --------------------------------------------------------------------------
     def __repr__(self):
         return f"Arg(opt={self.is_optional} posit={self.is_positional} fs={self.flag_short} fl={self.flag_long} "+\
-            f"opt_kw={self.kw_is_optional} default={self.kw_default_val} ftype={self.flag_type} nargs={self.n_args})"
+            f"opt_kw={self.kw_is_optional} default={self.default_value} ftype={self.flag_type} nargs={self.n_args})"
 
 
     # --------------------------------------------------------------------------
-    def _parse_default_value(self, buffer: str) -> str:
+    def _parse_default_value(self, buffer: str) -> tuple[str, str]:
         idx = buffer.find('=')
-        if idx == -1:
-            self.kw_default_val = ""
-            return buffer
-        self.kw_default_val = buffer[idx+1:]
-        return buffer[:idx]
+        if idx == -1: return buffer, ''
+        return buffer[:idx], buffer[idx+1:]
 
 
     # --------------------------------------------------------------------------
-    def _parse_name(self, buffer: str) -> str:
-        name, buffer = CLIFileError.assert_split(buffer, '[', 2)
-        self.name = name[int(self.is_optional):]
-        return buffer
+    def _parse_name(self, buffer: str) -> tuple[str, str]:
+        name, buffer = self._assert_split_into_2(buffer, '[')
+        return buffer, name[int(self.is_optional):]
 
 
     # --------------------------------------------------------------------------
-    def _parse_flags(self, buffer: str) -> str:
-        flags, buffer = CLIFileError.assert_split(buffer, ']', 2)
-        self.is_positional = not flags
+    def _parse_flags(self, buffer: str) -> tuple[str, bool, str, str]:
+        flags, buffer = self._assert_split_into_2(buffer, ']')
+        if not flags: return buffer, True, '', ''
 
-        if self.is_positional:
-            self.flag_short = ""
-            self.flag_long = ""
-            return buffer
+        flag_short, flag_long = self._assert_split_into_2(flags, ',')
+        if len(flag_short) > 1:
+            raise FYRSyntaxError(f"Short flags should be 1 character long, but got '{self.flag_short}'.")
 
-        self.flag_short, self.flag_long = CLIFileError.assert_split(flags, ',', 2)
-        if len(self.flag_short) > 1:
-            CLIFileError.parsing_err(f"Short flags should be 1 character long, but got '{self.flag_short}'.")
-
-        return buffer
+        return buffer, False, flag_short, flag_long
 
 
     # --------------------------------------------------------------------------
-    def _parse_n_args(self, buffer: str) -> str:
+    def _parse_n_args(self, buffer: str) -> tuple[str, bool, int]:
         if not buffer:
-            if self.kw_default_val:
-                CLIFileError.parsing_err(f"Flags with no arguments can't have a default value ('{self._raw_rule}')")
+            if self.default_value:
+                raise FYRSyntaxError(f"Flags with no arguments can't have a default value ('{self._raw_rule}')")
             if self.is_positional:
-                CLIFileError.parsing_err(f"Positional arguments must specify type and number of arguments ('{self._raw_rule}')")
+                raise FYRSyntaxError(f"Positional arguments must specify type and number of arguments ('{self._raw_rule}')")
 
-            self.kw_is_optional = False
-            self.n_args = 0
-            return ""
+            return "", False, 0
 
-        n_args, buffer = CLIFileError.assert_split(buffer, '.', 2)
-        self.kw_is_optional = n_args.startswith('~')
+        n_args, buffer = self._assert_split_into_2(buffer, '.')
+        kw_is_optional = n_args.startswith('~')
 
-        if self.kw_is_optional: n_args = n_args[1:]
+        if kw_is_optional: n_args = n_args[1:]
 
         if n_args == '*':
-            self.n_args = -1
-            return buffer
+            return buffer, kw_is_optional, -1
 
-        try:
-            self.n_args = int(n_args)
-        except ValueError:
-            CLIFileError.parsing_err(f"Invalid number of arguments specified: '{n_args}'")
+        if not n_args.isdigit():
+            raise FYRSyntaxError(f"Invalid number of arguments specified: '{n_args}'")
 
-        return buffer
+        return buffer, kw_is_optional, int(n_args)
 
 
     # --------------------------------------------------------------------------
-    def _parse_flag_type(self, buffer: str) -> None:
-        self.flag_type = FlagType.from_str(buffer)
-
+    def _assert_split_into_2(self, buffer: str, char_split: str) -> tuple[str, str]:
+        splitted = buffer.split(char_split)
+        if len(splitted) == 2: return splitted
+        raise FYRSyntaxError(f"Invalid substring found inside argument rule: '{self._raw_rule}'")
 
 
 # //////////////////////////////////////////////////////////////////////////////
@@ -141,7 +137,7 @@ class Node:
         self.parent: "Node|None" = parent
         self.children: dict[str, "Node"] = {}
         self.depth = 0 if parent is None else parent.depth + 1
-        self.rules: dict[str, ArgumentRule] = {}
+        self.rules: dict[str, Rule] = {}
 
     # --------------------------------------------------------------------------
     def __repr__(self):
@@ -151,7 +147,7 @@ class Node:
     # --------------------------------------------------------------------------
     def __getitem__(self, name: str) -> "Node":
         if name not in self.children:
-            CLIFileError.parsing_err(f"Branch '{name}' is not defined in the CLI rules.")
+            raise FYRSyntaxError(f"Branch '{name}' is not defined in the CLI rules.")
         return self.children[name]
 
     # --------------------------------------------------------------------------
@@ -165,11 +161,10 @@ class Node:
     def is_leaf(self) -> bool:
         return not self.children
 
-
     # --------------------------------------------------------------------------
     def _assert_unique_child(self, name: str):
         if name in self.children:
-            CLIFileError.parsing_err(f"Duplicate child branch '{name}' specified inside the same branch.")
+            raise FYRSyntaxError(f"Duplicate child branch '{name}' specified inside the same branch.")
 
 
 # //////////////////////////////////////////////////////////////////////////////
@@ -197,19 +192,18 @@ class FYRParser:
                 continue
 
             if token == "!@":
-                if node.depth == 0: CLIFileError.parsing_err("Unexpected '!@' token found outside of any branch.")
+                if node.depth == 0: raise FYRSyntaxError("Unexpected '!@' token found outside of any branch.")
                 node = node.parent
                 continue
 
-            arg = ArgumentRule(token)
-            if arg.name in node.rules:
-                CLIFileError.parsing_err(f"Duplicate definition of '{arg}' argument rule")
+            rule = Rule(token)
+            if rule.name in node.rules:
+                raise FYRSyntaxError(f"Duplicate definition of '{rule}'.")
 
-            node.rules[arg.name] = arg
+            node.rules[rule.name] = rule
 
         if node != self.tree:
-            CLIFileError.parsing_err(f"Unterminated branch (missing !@ keyword {node.depth} times)")
-
+            raise FYRSyntaxError(f"Unterminated branch (missing !@ keyword {node.depth} times)")
 
 
     # --------------------------------------------------------------------------
@@ -221,7 +215,7 @@ class FYRParser:
             if i0 == -1: return
 
             i1 = s.find("!fed")
-            if i1 == -1: CLIFileError.parsing_err("!def macro is missing the '!fed' closure.")
+            if i1 == -1: raise FYRSyntaxError("!def macro is missing the '!fed' closure.")
 
             return i0,i1
 
@@ -245,17 +239,17 @@ class FYRParser:
                 s_lower = get_text_around_macro(s_lower, idxs)
 
                 if not macro_split:
-                    CLIFileError.parsing_err("A !def macro is missing its name.")
+                    raise FYRSyntaxError("A !def macro is missing its name.")
 
                 macro_key = macro_split[0]
                 macro_val = "" if len(macro_split) == 1 \
                     else '\n'.join(macro_split[1:])
 
                 if "!def" in macro_val:
-                    CLIFileError.parsing_err("Nested !def macros are not allowed")
+                    raise FYRSyntaxError("Nested !def macros are not allowed")
 
                 if macro_key in macros:
-                    CLIFileError.parsing_err(f"Duplicate definition of '{macro_key}' macro")
+                    raise FYRSyntaxError(f"Duplicate definition of '{macro_key}' macro")
 
                 macros[macro_key] = macro_val
             return macros
