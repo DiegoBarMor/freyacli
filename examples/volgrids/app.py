@@ -3,7 +3,7 @@ from pathlib import Path
 from enum import Enum, auto
 
 # //////////////////////////////////////////////////////////////////////////////
-class FYRSyntaxError(SyntaxError):
+class FreyaSyntaxError(SyntaxError):
     def __init__(self, msg):
         super().__init__(f"Error parsing FYR string. {msg}")
 
@@ -25,7 +25,23 @@ class FlagType(Enum):
         if s == "path":  return cls.PATH
         if s == "float": return cls.FLOAT
         if s == "int":   return cls.INT
-        raise FYRSyntaxError(f"Invalid flag type specified: '{s}'")
+        raise FreyaSyntaxError(f"Invalid flag type specified: '{s}'")
+
+
+# //////////////////////////////////////////////////////////////////////////////
+class HelpStr:
+    def __init__(self):
+        self.string = ""
+
+    # --------------------------------------------------------------------------
+    def __repr__(self):
+        return self.string
+
+    # --------------------------------------------------------------------------
+    def concat(self, s: str):
+        if self.string and not self.string.endswith('\n'):
+            self.string += ' '
+        self.string += s
 
 
 # //////////////////////////////////////////////////////////////////////////////
@@ -33,6 +49,7 @@ class Rule:
     def __init__(self, raw_rule: str):
         self._raw_rule = raw_rule
         self._raw_user_value: str = ""
+        self.help_str: HelpStr = HelpStr()
 
         self.name: str
         self.is_positional: bool
@@ -71,7 +88,8 @@ class Rule:
     # --------------------------------------------------------------------------
     def __repr__(self):
         return f"Arg(opt={self.is_optional} posit={self.is_positional} fs={self.flag_short} fl={self.flag_long} "+\
-            f"opt_kw={self.kw_is_optional} default={self.default_value} ftype={self.flag_type} nargs={self.n_args})"
+            f"opt_kw={self.kw_is_optional} default={self.default_value} ftype={self.flag_type} nargs={self.n_args})"+\
+            f"help='{self.help_str.string[:10]}'"
 
 
     # --------------------------------------------------------------------------
@@ -94,7 +112,7 @@ class Rule:
 
         flag_short, flag_long = self._assert_split_into_2(flags, ',')
         if len(flag_short) > 1:
-            raise FYRSyntaxError(f"Short flags should be 1 character long, but got '{self.flag_short}'.")
+            raise FreyaSyntaxError(f"Short flags should be 1 character long, but got '{self.flag_short}'.")
 
         return buffer, False, flag_short, flag_long
 
@@ -103,9 +121,9 @@ class Rule:
     def _parse_n_args(self, buffer: str) -> tuple[str, bool, int]:
         if not buffer:
             if self.default_value:
-                raise FYRSyntaxError(f"Flags with no arguments can't have a default value ('{self._raw_rule}')")
+                raise FreyaSyntaxError(f"Flags with no arguments can't have a default value ('{self._raw_rule}')")
             if self.is_positional:
-                raise FYRSyntaxError(f"Positional arguments must specify type and number of arguments ('{self._raw_rule}')")
+                raise FreyaSyntaxError(f"Positional arguments must specify type and number of arguments ('{self._raw_rule}')")
 
             return "", False, 0
 
@@ -118,7 +136,7 @@ class Rule:
             return buffer, kw_is_optional, -1
 
         if not n_args.isdigit():
-            raise FYRSyntaxError(f"Invalid number of arguments specified: '{n_args}'")
+            raise FreyaSyntaxError(f"Invalid number of arguments specified: '{n_args}'")
 
         return buffer, kw_is_optional, int(n_args)
 
@@ -127,7 +145,7 @@ class Rule:
     def _assert_split_into_2(self, buffer: str, char_split: str) -> tuple[str, str]:
         splitted = buffer.split(char_split)
         if len(splitted) == 2: return splitted
-        raise FYRSyntaxError(f"Invalid substring found inside argument rule: '{self._raw_rule}'")
+        raise FreyaSyntaxError(f"Invalid substring found inside argument rule: '{self._raw_rule}'")
 
 
 # //////////////////////////////////////////////////////////////////////////////
@@ -136,8 +154,9 @@ class Node:
         self.name = name
         self.parent: "Node|None" = parent
         self.children: dict[str, "Node"] = {}
-        self.depth = 0 if parent is None else parent.depth + 1
+        self.depth = 0 if self.is_root() else parent.depth + 1
         self.rules: dict[str, Rule] = {}
+        self.help_str: HelpStr = HelpStr()
 
     # --------------------------------------------------------------------------
     def __repr__(self):
@@ -146,9 +165,7 @@ class Node:
 
     # --------------------------------------------------------------------------
     def __getitem__(self, name: str) -> "Node":
-        if name not in self.children:
-            raise FYRSyntaxError(f"Branch '{name}' is not defined in the CLI rules.")
-        return self.children[name]
+        return self.get_child(name)
 
     # --------------------------------------------------------------------------
     def add_child(self, name: str) -> "Node":
@@ -158,64 +175,121 @@ class Node:
         return child
 
     # --------------------------------------------------------------------------
-    def is_leaf(self) -> bool:
-        return not self.children
+    def get_child(self, name: str) -> "Node":
+        if name not in self.children:
+            raise FreyaSyntaxError(f"Branch '{name}' is not defined in the CLI rules.")
+        return self.children[name]
+
+    # --------------------------------------------------------------------------
+    def is_root(self) -> bool: return self.parent is None
+    def is_leaf(self) -> bool: return not self.children
 
     # --------------------------------------------------------------------------
     def _assert_unique_child(self, name: str):
         if name in self.children:
-            raise FYRSyntaxError(f"Duplicate child branch '{name}' specified inside the same branch.")
+            raise FreyaSyntaxError(f"Duplicate child branch '{name}' specified inside the same branch.")
 
 
 # //////////////////////////////////////////////////////////////////////////////
-class FYRParser:
-    def __init__(self, raw_rules: str):
-        rules = self._preprocess_cli_rules(raw_rules)
+class FreyaParser:
+    def __init__(self, raw_rules: str, raw_help: str):
+        rules = self._preprocess_macros(raw_rules)
+        helps = self._preprocess_macros(raw_help)
+
         self.tree = Node('', None)
         self.node = self.tree
-        self.build_rules_tree(rules)
+        self._tree_build_rules(rules)
+        self._tree_add_helps(helps)
 
 
     # --------------------------------------------------------------------------
     @classmethod
-    def read_cli(cls, path_cli: str|Path):
-        return cls(Path(path_cli).read_text())
+    def from_files(cls, path_fyr: str|Path, path_fyh: str|Path) -> "FreyaParser":
+        return cls(
+            raw_rules = Path(path_fyr).read_text(),
+            raw_help = Path(path_fyh).read_text(),
+        )
 
 
     # --------------------------------------------------------------------------
-    def build_rules_tree(self, rules: str):
+    def _tree_build_rules(self, rules: str):
         node: Node = self.tree
         for token in rules.split():
             if token.startswith('@'):
                 name = token[1:]
+                if not name: raise FreyaSyntaxError("Branch names can't be empty.")
                 node = node.add_child(name)
                 continue
 
             if token == "!@":
-                if node.depth == 0: raise FYRSyntaxError("Unexpected '!@' token found outside of any branch.")
+                if node.depth == 0: raise FreyaSyntaxError("Unexpected '!@' token found outside of any branch.")
                 node = node.parent
                 continue
 
             rule = Rule(token)
             if rule.name in node.rules:
-                raise FYRSyntaxError(f"Duplicate definition of '{rule}'.")
+                raise FreyaSyntaxError(f"Duplicate definition of '{rule}'.")
 
             node.rules[rule.name] = rule
 
-        if node != self.tree:
-            raise FYRSyntaxError(f"Unterminated branch (missing !@ keyword {node.depth} times)")
+        if not node.is_root():
+            raise FreyaSyntaxError(f"Unterminated branch (missing !@ keyword {node.depth} times)")
+
+
+    # --------------------------------------------------------------------------
+    def _tree_add_helps(self, helps: str):
+        def find_first_space(s: str) -> int:
+            idx = s.find(' ')
+            return len(s) if idx == -1 else idx
+
+        node: Node = self.tree
+        help_str: HelpStr = self.tree.help_str
+
+        for row in helps.split('\n'):
+            row = row.strip()
+
+            if row.startswith('@'):
+                first_space = find_first_space(row)
+                name = row[1:first_space]
+                if not name: raise FreyaSyntaxError("Branch names can't be empty.")
+
+                node = node.get_child(name)
+                row = row[first_space+1:].lstrip()
+
+            elif row.startswith("!@"):
+                if node.depth == 0: raise FreyaSyntaxError("Unexpected '!@' token found outside of any branch.")
+                first_space = find_first_space(row)
+
+                node = node.parent
+                row = row[first_space+1:].lstrip()
+
+            fyh_start = row.find("!fyh:")
+            if fyh_start != -1:
+                first_space = find_first_space(row)
+                key = row[5:first_space]
+                row = row[first_space+1:].lstrip()
+
+                if key == '_':
+                    help_str = node.help_str
+                elif key in node.rules:
+                    help_str = node.rules[key].help_str
+                else:
+                    raise FreyaSyntaxError(f"Help specified for non-existent rule '{key}'.")
+
+            if not row: continue
+            help_str.concat(row)
 
 
     # --------------------------------------------------------------------------
     @classmethod
-    def _preprocess_cli_rules(cls, rules: str):
+    def _preprocess_macros(cls, rules: str):
         # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
         def get_next_macro_idxs(s: str) -> tuple[int, int]|None:
             i0 = s.find("!def")
             if i0 == -1: return
 
             i1 = s.find("!fed")
-            if i1 == -1: raise FYRSyntaxError("!def macro is missing the '!fed' closure.")
+            if i1 == -1: raise FreyaSyntaxError("!def macro is missing the '!fed' closure.")
 
             return i0,i1
 
@@ -239,17 +313,17 @@ class FYRParser:
                 s_lower = get_text_around_macro(s_lower, idxs)
 
                 if not macro_split:
-                    raise FYRSyntaxError("A !def macro is missing its name.")
+                    raise FreyaSyntaxError("A !def macro is missing its name.")
 
                 macro_key = macro_split[0]
                 macro_val = "" if len(macro_split) == 1 \
                     else '\n'.join(macro_split[1:])
 
                 if "!def" in macro_val:
-                    raise FYRSyntaxError("Nested !def macros are not allowed")
+                    raise FreyaSyntaxError("Nested !def macros are not allowed")
 
                 if macro_key in macros:
-                    raise FYRSyntaxError(f"Duplicate definition of '{macro_key}' macro")
+                    raise FreyaSyntaxError(f"Duplicate definition of '{macro_key}' macro")
 
                 macros[macro_key] = macro_val
             return macros
@@ -279,12 +353,12 @@ class FYRParser:
 ################################################################################
 if __name__ == "__main__":
     dir_example = Path(__file__).parent
-    parser = FYRParser.read_cli(dir_example / "fy_rules.fyr")
-    print(*parser.tree["smiffer"]["rna"].rules.items(), sep = '\n')
-    print()
-    print(*parser.tree["vgtools"]["convert"].rules.items(), sep = '\n')
-    print()
-    print(*parser.tree["vgtools"]["compare"].rules.items(), sep = '\n')
+    parser = FreyaParser.from_files(dir_example / "fy_rules.fyr", dir_example / "fy_help.fyh")
+
+    print(parser.tree.help_str, '\n')
+    print(*parser.tree["smiffer"]["rna"].rules.items(), '', sep = '\n')
+    print(*parser.tree["vgtools"]["convert"].rules.items(), '', sep = '\n')
+    print(*parser.tree["vgtools"]["compare"].rules.items(), '', sep = '\n')
 
 
 ################################################################################

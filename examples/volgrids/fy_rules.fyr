@@ -5,6 +5,13 @@
     @rna    !use:_smif_mode !@
     @ligand !use:_smif_mode !@
 !@
+
+@smutils
+    @resids_nonbp
+        path_in[]1.PATH
+    !@
+!@
+
 @apbs
     # path_pdb[]1.PATH
     # ~conv2mrc[,mrc]
@@ -12,6 +19,7 @@
     # ~verbose[,verbose]
     ### leaving the bracket empty just keeps all arguments as "unparsed"
 !@
+
 @vgtools
     ### subcommands section for the "vgtools" sub-app starts here
     @convert
@@ -48,11 +56,6 @@
         ~x[x,yz]1.FLOAT
         ~y[y,xz]1.FLOAT
         ~z[z,xy]1.FLOAT
-    !@
-!@
-@smutils
-    @resids_nonbp
-        path_in[]1.PATH
     !@
 !@
 

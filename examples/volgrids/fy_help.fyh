@@ -15,11 +15,23 @@
         !use:_smif_mode
     !@
 !@
+
+@smutils
+    !fyh:_ Utilities related to more advanced SMIF usage.
+    @resids_nonbp
+        Print the set of non-base-paired residue indices in a given RNA structure.
+        A residue is considered non-base-paired if it does not form a canonical base pair (UA, CG) with any other residue.
+        Requires rnapolis.
+    !@
+!@
+
 @apbs
     !fyh:_ Generate raw APBS potential grids for biomolecular structures.
 !@
+
 @vgtools
     !fyh:_ Miscellaneous tools for generic volumetric grids.
+        Grids can be for any kind of data, not necessarily SMIFs.
     @convert
         !fyh:_ Convert grid files between formats.
         !fyh:path_in Path of the grid to be converted.
@@ -53,7 +65,7 @@
     !@
     @summary
         !fyh:_ Print a summary of the grid file (format, dimensions, resolution, etc.) to the console.
-        !fyh:path_in: Path to a grid file.
+        !fyh:path_in Path to a grid file.
     !@
     @compare
         !fyh:_ Compare two grid files by printing the number of differing points and their accumulated difference.
@@ -72,14 +84,7 @@
         !fyh:z Rotation angle in degrees along the xy plane (in degrees).
     !@
 !@
-@smutils
-    !fyh:_ Utilities related to more advanced SMIF usage.
-    @resids_nonbp
-        Print the set of non-base-paired residue indices in a given RNA structure.
-        A residue is considered non-base-paired if it does not form a canonical base pair (UA, CG) with any other residue.
-        Requires rnapolis.
-    !@
-!@
+
 
 !def _smif_mode
     !fyh:path_pdb
