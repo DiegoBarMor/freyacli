@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from enum import Enum, auto
@@ -43,9 +44,19 @@ class HelpStr:
             self.string += ' '
         self.string += s
 
+    # --------------------------------------------------------------------------
+    def nl_surround(self) -> str:
+        if not self.string: return self.string
+        return f"\n{self.string}\n"
+
+    # --------------------------------------------------------------------------
+    def wrapped_text(self, width: int) -> str:
+        # [TODO] implement this method to wrap the help text to the specified width
+        return self.string
+
 
 # //////////////////////////////////////////////////////////////////////////////
-class Rule:
+class ArgumentRule:
     def __init__(self, raw_rule: str):
         self._raw_rule = raw_rule
         self._raw_user_value: str = ""
@@ -88,8 +99,8 @@ class Rule:
     # --------------------------------------------------------------------------
     def __repr__(self):
         return f"Arg(opt={self.is_optional} posit={self.is_positional} fs={self.flag_short} fl={self.flag_long} "+\
-            f"opt_kw={self.kw_is_optional} default={self.default_value} ftype={self.flag_type} nargs={self.n_args})"+\
-            f"help='{self.help_str.string[:10]}'"
+            f"opt_kw={self.kw_is_optional} default={self.default_value} ftype={self.flag_type} nargs={self.n_args} "+\
+            f"help='{self.help_str.string[:20]}...')"
 
 
     # --------------------------------------------------------------------------
@@ -149,33 +160,33 @@ class Rule:
 
 
 # //////////////////////////////////////////////////////////////////////////////
-class Node:
-    def __init__(self, name: str, parent: "Node|None"):
+class Subcomand:
+    def __init__(self, name: str, parent: "Subcomand|None"):
         self.name = name
-        self.parent: "Node|None" = parent
-        self.children: dict[str, "Node"] = {}
+        self.parent: "Subcomand|None" = parent
+        self.children: dict[str, "Subcomand"] = {}
         self.depth = 0 if self.is_root() else parent.depth + 1
-        self.rules: dict[str, Rule] = {}
+        self.rules: dict[str, ArgumentRule] = {}
         self.help_str: HelpStr = HelpStr()
 
     # --------------------------------------------------------------------------
     def __repr__(self):
         values = ','.join('' if v is None else str(v) for v in self.children.values())
-        return f"Node({self.depth}:{self.name}){{{values if values else ''}}}"
+        return f"Subcomand({self.depth}:{self.name}){{{values if values else ''}}}"
 
     # --------------------------------------------------------------------------
-    def __getitem__(self, name: str) -> "Node":
+    def __getitem__(self, name: str) -> "Subcomand":
         return self.get_child(name)
 
     # --------------------------------------------------------------------------
-    def add_child(self, name: str) -> "Node":
+    def add_child(self, name: str) -> "Subcomand":
         self._assert_unique_child(name)
-        child = Node(name, self)
+        child = Subcomand(name, self)
         self.children[name] = child
         return child
 
     # --------------------------------------------------------------------------
-    def get_child(self, name: str) -> "Node":
+    def get_child(self, name: str) -> "Subcomand":
         if name not in self.children:
             raise FreyaSyntaxError(f"Branch '{name}' is not defined in the CLI rules.")
         return self.children[name]
@@ -183,6 +194,34 @@ class Node:
     # --------------------------------------------------------------------------
     def is_root(self) -> bool: return self.parent is None
     def is_leaf(self) -> bool: return not self.children
+
+    # --------------------------------------------------------------------------
+    def str_help_long(self) -> str:
+        def pad_name(s: str) -> str:
+            return f"    {s.ljust(max_name_len)}  - "
+
+        if self.is_leaf():
+            return "" # [TODO]
+
+        max_name_len = max(map(len, self.children.keys()))
+        width_max, _ = os.get_terminal_size()
+        width_name = len(pad_name(""))
+        width_desc = max(1, width_max - width_name)
+
+        rows_commands = '\n'.join((
+            f"{pad_name(name)}{child.help_str.wrapped_text(width_desc)}"
+            for name, child in self.children.items()
+        ))
+
+        return '\n'.join((
+            self.help_str.nl_surround(),
+            "commands:",
+            "  The following subcommands are available:",
+            "",
+            "  COMMAND",
+            rows_commands,
+        ))
+
 
     # --------------------------------------------------------------------------
     def _assert_unique_child(self, name: str):
@@ -196,7 +235,7 @@ class FreyaParser:
         rules = self._preprocess_macros(raw_rules)
         helps = self._preprocess_macros(raw_help)
 
-        self.tree = Node('', None)
+        self.tree = Subcomand('', None)
         self.node = self.tree
         self._tree_build_rules(rules)
         self._tree_add_helps(helps)
@@ -213,7 +252,7 @@ class FreyaParser:
 
     # --------------------------------------------------------------------------
     def _tree_build_rules(self, rules: str):
-        node: Node = self.tree
+        node: Subcomand = self.tree
         for token in rules.split():
             if token.startswith('@'):
                 name = token[1:]
@@ -226,7 +265,7 @@ class FreyaParser:
                 node = node.parent
                 continue
 
-            rule = Rule(token)
+            rule = ArgumentRule(token)
             if rule.name in node.rules:
                 raise FreyaSyntaxError(f"Duplicate definition of '{rule}'.")
 
@@ -242,7 +281,7 @@ class FreyaParser:
             idx = s.find(' ')
             return len(s) if idx == -1 else idx
 
-        node: Node = self.tree
+        node: Subcomand = self.tree
         help_str: HelpStr = self.tree.help_str
 
         for row in helps.split('\n'):
@@ -350,15 +389,107 @@ class FreyaParser:
         )
 
 
+# //////////////////////////////////////////////////////////////////////////////
+class ArgsParser:
+    def __init__(self, fy_parser: FreyaParser, app_name: str, version: str):
+        self.args = {}
+        self._app_name = app_name
+        self._version = version
+
+        self._fy_parser = fy_parser
+        self._current_node = fy_parser.tree
+
+    # --------------------------------------------------------------------------
+    def parse_args(self, args: list[str]):
+        if not args: raise FreyaSyntaxError(
+            "Argument list shouldn't be empty. At least the application name should be specified (e.g. sys.argv[0])."
+        )
+        self.py_name = args[0]
+        self._parse_args(args[1:])
+
+
+    # --------------------------------------------------------------------------
+    def _parse_args(self, args: list[str]) -> None:
+        self._current_node = self._fy_parser.tree
+
+        for arg in args:
+            if self._current_node.is_leaf():
+                self._parse_argument(arg)
+                continue
+
+            self._parse_subcommand(arg)
+
+        if not self._current_node.is_leaf(): # execution of the app must happen at a leaf node
+            self._help_and_exit(1)
+
+
+    # --------------------------------------------------------------------------
+    def _parse_subcommand(self, next_subcommand: str):
+        if next_subcommand not in self._current_node.children:
+            self._help_and_exit(1)
+
+        self._current_node = self._current_node.get_child(next_subcommand)
+
+
+    # --------------------------------------------------------------------------
+    def _parse_argument(self, arg: str):
+        # [TODO]
+        print("LEAF", arg)
+
+
+    # --------------------------------------------------------------------------
+    def _help_and_exit(self, exit_code: int):
+        str_options = " [options...]" if self._current_node.rules else "" # options isn't currently supported for non-leaf nodes
+        path_subcommands = self.py_name # [TODO]
+
+
+        print('\n'.join((
+            f"{self._app_name} (v{self._version}). Usage:",
+            f"  {path_subcommands}{str_options} COMMAND ...",
+            self._current_node.str_help_long(),
+            "",
+        )))
+        exit(exit_code)
+
+
+# //////////////////////////////////////////////////////////////////////////////
+class App:
+    _APP_NAME = "FreyacliApp" # override these values
+    _VERSION = "0.1.0"
+
+    # --------------------------------------------------------------------------
+    def __init__(self, args: list[str], path_fyr: str|Path, path_fyh: str|Path):
+        fy_parser = FreyaParser.from_files(path_fyr, path_fyh)
+        self.args = ArgsParser(fy_parser, self._APP_NAME, self._VERSION)
+        self.args.parse_args(args)
+
+
+    # --------------------------------------------------------------------------
+    def run(self):
+        print("Do something...")
+        print(self.args.args)
+
+
 ################################################################################
 if __name__ == "__main__":
-    dir_example = Path(__file__).parent
-    parser = FreyaParser.from_files(dir_example / "fy_rules.fyr", dir_example / "fy_help.fyh")
+    # argv = [
+    #     "volgrids", "smiffer", "rna", "1akx.pdb",
+    #     "-i", "1", "2", "3", "4 5 6 7",
+    #     "-c", "DO_SMIF_STACKING=false", "DO_SMIF_HYDROPHOBIC=false", "DO_SMIF_HYDROPHILIC=false",
+    #         "DO_SMIF_HBA=true", "DO_SMIF_HBD=true", "HBONDS_ONLY_NUCLEOBASE=true"
+    # ]
 
-    print(parser.tree.help_str, '\n')
-    print(*parser.tree["smiffer"]["rna"].rules.items(), '', sep = '\n')
-    print(*parser.tree["vgtools"]["convert"].rules.items(), '', sep = '\n')
-    print(*parser.tree["vgtools"]["compare"].rules.items(), '', sep = '\n')
+    import sys; argv = sys.argv
+
+    dir_example = Path(__file__).parent
+    app = App(argv, dir_example / "fy_rules.fyr", dir_example / "fy_help.fyh")
+    app.run()
+
+    # print(app.args._fy_parser.tree.help_str, '\n')
+    # print(*app.args._fy_parser.tree["smiffer"]["rna"].rules.items(), '', sep = '\n')
+    # print(*app.args._fy_parser.tree["vgtools"]["convert"].rules.items(), '', sep = '\n')
+    # print(*app.args._fy_parser.tree["vgtools"]["compare"].rules.items(), '', sep = '\n')
 
 
 ################################################################################
+# os. get_terminal_size()
