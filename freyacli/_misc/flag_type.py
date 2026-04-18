@@ -4,17 +4,17 @@ import freyacli as fy
 
 # //////////////////////////////////////////////////////////////////////////////
 class FlagType(Enum):
-    BOOL  = auto()
-    STR   = auto()
-    PATH  = auto()
-    FLOAT = auto()
-    INT   = auto()
+    TOGGLE = auto()
+    STR    = auto()
+    PATH   = auto()
+    FLOAT  = auto()
+    INT    = auto()
 
     # --------------------------------------------------------------------------
     @classmethod
     def from_str(cls, s: str) -> "FlagType":
         s = s.lower()
-        if not s:        return cls.BOOL
+        if not s:        return cls.TOGGLE
         if s == "str":   return cls.STR
         if s == "path":  return cls.PATH
         if s == "float": return cls.FLOAT

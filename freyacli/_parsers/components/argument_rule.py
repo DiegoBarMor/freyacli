@@ -7,15 +7,15 @@ class ArgumentRule:
         self._raw_user_value: str = ""
         self.help_str: fy.HelpStr = fy.HelpStr()
 
-        self.name: str
-        self.is_positional: bool
-        self.is_optional: bool
-        self.kw_is_optional: bool
-        self.flag_short: str
-        self.flag_long: str
-        self.default_value: str
-        self.flag_type: fy.FlagType
-        self.n_args: int
+        self.name: str              # name that will be displayed between <> (e.g. "<value>") in the help string, and used to fetch any given values
+        self.is_positional: bool    # True when the argument doesn't need a preceding "flag" (e.g. just "<value>" instead of "--flag <value>")
+        self.is_optional: bool      # display with surrounding [] in the help string (e.g. "[<value>]")
+        self.kw_is_optional: bool   # these are flags that can optionally have a keyword argument, e.g. "--flag <value>" and "--flag" are both valid. Represented as "--flag [<value>]"
+        self.flag_short: str        # must be 1 character long. It's always used with a single preceding dash (e.g. "-f")
+        self.flag_long: str         # used with a double preceding dash (e.g. "--flag")
+        self.default_value: str     # when a default value is present, it's placed at the beginning of the respective help string, right after the flag type (e.g. "INT (default: 0)").
+        self.flag_type: fy.FlagType # placed at the beginning of the help string. TOGGLE type is used for flags with no arguments, and the respective type (e.g. STR, INT) is used for flags with arguments.
+        self.n_args: int            # when larger than 1, the help string will display ...; when -1 the argument can be repeated indefinitely; otherwise, the exact number of arguments is displayed after ... (e.g. "--flag <value> ... (3)")
 
         self.is_optional = raw_rule.startswith('~')
 
@@ -102,6 +102,25 @@ class ArgumentRule:
         splitted = buffer.split(char_split)
         if len(splitted) == 2: return splitted
         raise fy.FreyaSyntaxError(f"Invalid substring found inside argument rule: '{self._raw_rule}'")
+
+
+    # --------------------------------------------------------------------------
+    def _get_usage_str_positional(self) -> str:
+        """Usage string is only relevant for positionals. Flag arguments are summarized as [options...] in the usage string. A more detailed description of them is provided in the longer help string."""
+
+        if not self.is_positional:
+            raise fy.FreyaSyntaxError(f"Usage string can only be generated for positional arguments, but got a flag argument ('{self._raw_rule}').")
+
+        buffer = f"<{self.name}{self._get_str_n_args()}>"
+        if self.is_optional: buffer = f"[{buffer}]"
+        return buffer
+
+
+    # --------------------------------------------------------------------------
+    def _get_str_n_args(self) -> str:
+        if self.n_args == -1: return " ..."
+        if self.n_args <= 1: return ""
+        return f" ... ({self.n_args})"
 
 
 # //////////////////////////////////////////////////////////////////////////////

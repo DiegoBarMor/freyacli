@@ -30,7 +30,7 @@ class ArgsParser:
 
             self._parse_subcommand(arg)
 
-        if not self._current_node.is_leaf(): # execution of the app must happen at a leaf node
+        if not self._current_node.is_leaf(): # [NOTE] execution of the app must currently happen at a leaf node
             self._help_and_exit(1)
 
 
@@ -46,19 +46,15 @@ class ArgsParser:
     def _parse_argument(self, arg: str):
         # [TODO]
         print("LEAF", arg)
+        self._help_and_exit(1)
 
 
     # --------------------------------------------------------------------------
     def _help_and_exit(self, exit_code: int, err_message: str = ""):
-        str_options = " [options...]" if self._current_node.rules else "" # options isn't currently supported for non-leaf nodes
-        path_subcommands = self.py_name # [TODO]
-
-        if err_message: err_message = fy.HelpStr(err_message).nl_surround(fy.WIDTH_TERMINAL)
-
+        if err_message: err_message = fy.HelpStr(err_message).nl_surround()
         print('\n'.join((
             f"{self._app_name} (v{self._version}). Usage:",
-            f"  {path_subcommands}{str_options} COMMAND ...",
-            self._current_node.str_help_long(),
+            self._current_node.str_help_long(self.py_name),
             err_message,
         )))
         exit(exit_code)

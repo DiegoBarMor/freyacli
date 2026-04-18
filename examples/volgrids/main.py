@@ -7,8 +7,11 @@ import freyacli as fy
 
 # //////////////////////////////////////////////////////////////////////////////
 class App(fy.App):
-    _APP_NAME = "Volgrids"
-    _VERSION = "0.1.0"
+    _APP_NAME = "volgrids"
+    _VERSION = "1.2.3"
+
+    def run(self):
+        self.args._help_and_exit(1) # [WIP]
 
 
 ################################################################################

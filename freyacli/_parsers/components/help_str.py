@@ -1,3 +1,5 @@
+import freyacli as fy
+
 # //////////////////////////////////////////////////////////////////////////////
 class HelpStr:
     def __init__(self, string: str = ""):
@@ -32,9 +34,16 @@ class HelpStr:
         return out
 
     # --------------------------------------------------------------------------
-    def nl_surround(self, width: int) -> str:
+    def nl_surround(self) -> str:
+        """Surrounds the string with newlines and wraps it to fit the terminal width."""
         if not self.string: return self.string
-        return f"\n{self.wrapped_text(0, width)}\n"
+        return f"\n{self.wrapped_text(0, fy.WIDTH_TERMINAL)}\n"
+
+
+    # --------------------------------------------------------------------------
+    @staticmethod
+    def pad_name(s: str, max_len: int) -> str:
+        return f"    {s.ljust(max_len)}  - "
 
 
 # //////////////////////////////////////////////////////////////////////////////
