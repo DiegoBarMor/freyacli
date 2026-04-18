@@ -53,7 +53,7 @@ class ArgsParser:
     def _help_and_exit(self, exit_code: int, err_message: str = ""):
         if err_message: err_message = fy.HelpStr(err_message).nl_surround()
         print('\n'.join((
-            f"{self._app_name} (v{self._version}). Usage:",
+            f"{self._app_name} ({fy.Color.cyan('v'+self._version)}). Usage:",
             self._current_node.str_help_long(self.py_name),
             err_message,
         )))

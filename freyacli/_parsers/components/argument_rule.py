@@ -111,7 +111,7 @@ class ArgumentRule:
         if not self.is_positional:
             raise fy.FreyaSyntaxError(f"Usage string can only be generated for positional arguments, but got a flag argument ('{self._raw_rule}').")
 
-        buffer = f"<{self.name}{self._get_str_n_args()}>"
+        buffer = fy.Color.blue(f"<{self.name}{self._get_str_n_args()}>")
         if self.is_optional: buffer = f"[{buffer}]"
         return buffer
 

@@ -1,6 +1,8 @@
 from ._misc.freya_syntax_error import FreyaSyntaxError
 from ._misc.flag_type import FlagType
 
+from ._utils.color import Color
+
 from ._parsers.components.help_str import HelpStr
 from ._parsers.components.argument_rule import ArgumentRule
 from ._parsers.components.subcommand import Subcomand

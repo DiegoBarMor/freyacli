@@ -57,9 +57,9 @@ class Subcomand:
 
         if self.is_leaf():
             ### [NOTE] options isn't currently supported for non-leaf nodes
-            return f"{preffix} {usage_posits}[options...]"
+            return f"{preffix} {usage_posits}{fy.Color.green('[options...]')}"
 
-        return f"{preffix} COMMAND ..."
+        return f"{preffix} {fy.Color.yellow('COMMAND')} ..."
 
 
     # --------------------------------------------------------------------------
@@ -74,13 +74,13 @@ class Subcomand:
         width_desc = max(1, fy.WIDTH_TERMINAL - width_name)
 
         rows_commands = '\n'.join((
-            fy.HelpStr.pad_name(name, max_name_len) +\
+            fy.Color.yellow(fy.HelpStr.pad_name(name, max_name_len)) +\
                 child.help_str.wrapped_text(width_name, width_desc)
             for name, child in self.children.items()
         ))
 
         return '\n'.join((
-            "commands:",
+            fy.Color.yellow("commands:"),
             "  The following subcommands are available:",
             "",
             "  COMMAND",
