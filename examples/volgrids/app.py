@@ -3,6 +3,8 @@ from pathlib import Path
 
 from enum import Enum, auto
 
+WIDTH_TERMINAL: int = 1 # automatically set to the current terminal width when App is initialized
+
 # //////////////////////////////////////////////////////////////////////////////
 class FreyaSyntaxError(SyntaxError):
     def __init__(self, msg):
@@ -31,8 +33,8 @@ class FlagType(Enum):
 
 # //////////////////////////////////////////////////////////////////////////////
 class HelpStr:
-    def __init__(self):
-        self.string = ""
+    def __init__(self, string: str = ""):
+        self.string = string
 
     # --------------------------------------------------------------------------
     def __repr__(self):
@@ -45,14 +47,27 @@ class HelpStr:
         self.string += s
 
     # --------------------------------------------------------------------------
-    def nl_surround(self) -> str:
-        if not self.string: return self.string
-        return f"\n{self.string}\n"
+    def wrapped_text(self, indent: int, width: int) -> str:
+        out = ""
+        buffer = self.string.replace('\n', ' ')
+        while buffer:
+            if len(buffer) > width:
+                row = buffer[:width]
+                last_space = row[::-1].find(' ') + 1
+                idx = len(row) - last_space
+            else:
+                idx = len(buffer)
+
+            if out: out += f"\n{indent*' '}"
+            out += buffer[:idx]
+            buffer = buffer[idx+1:]
+
+        return out
 
     # --------------------------------------------------------------------------
-    def wrapped_text(self, width: int) -> str:
-        # [TODO] implement this method to wrap the help text to the specified width
-        return self.string
+    def nl_surround(self, width: int) -> str:
+        if not self.string: return self.string
+        return f"\n{self.wrapped_text(0, width)}\n"
 
 
 # //////////////////////////////////////////////////////////////////////////////
@@ -204,17 +219,16 @@ class Subcomand:
             return "" # [TODO]
 
         max_name_len = max(map(len, self.children.keys()))
-        width_max, _ = os.get_terminal_size()
         width_name = len(pad_name(""))
-        width_desc = max(1, width_max - width_name)
+        width_desc = max(1, WIDTH_TERMINAL - width_name)
 
         rows_commands = '\n'.join((
-            f"{pad_name(name)}{child.help_str.wrapped_text(width_desc)}"
+            f"{pad_name(name)}{child.help_str.wrapped_text(width_name, width_desc)}"
             for name, child in self.children.items()
         ))
 
         return '\n'.join((
-            self.help_str.nl_surround(),
+            self.help_str.nl_surround(WIDTH_TERMINAL),
             "commands:",
             "  The following subcommands are available:",
             "",
@@ -426,7 +440,7 @@ class ArgsParser:
     # --------------------------------------------------------------------------
     def _parse_subcommand(self, next_subcommand: str):
         if next_subcommand not in self._current_node.children:
-            self._help_and_exit(1)
+            self._help_and_exit(1, f"Unrecognized command: '{next_subcommand}'.")
 
         self._current_node = self._current_node.get_child(next_subcommand)
 
@@ -438,16 +452,17 @@ class ArgsParser:
 
 
     # --------------------------------------------------------------------------
-    def _help_and_exit(self, exit_code: int):
+    def _help_and_exit(self, exit_code: int, err_message: str = ""):
         str_options = " [options...]" if self._current_node.rules else "" # options isn't currently supported for non-leaf nodes
         path_subcommands = self.py_name # [TODO]
 
+        if err_message: err_message = HelpStr(err_message).nl_surround(WIDTH_TERMINAL)
 
         print('\n'.join((
             f"{self._app_name} (v{self._version}). Usage:",
             f"  {path_subcommands}{str_options} COMMAND ...",
             self._current_node.str_help_long(),
-            "",
+            err_message,
         )))
         exit(exit_code)
 
@@ -459,6 +474,10 @@ class App:
 
     # --------------------------------------------------------------------------
     def __init__(self, args: list[str], path_fyr: str|Path, path_fyh: str|Path):
+        global WIDTH_TERMINAL
+        WIDTH_TERMINAL, _ = os.get_terminal_size()
+        if not WIDTH_TERMINAL: WIDTH_TERMINAL = 1
+
         fy_parser = FreyaParser.from_files(path_fyr, path_fyh)
         self.args = ArgsParser(fy_parser, self._APP_NAME, self._VERSION)
         self.args.parse_args(args)
@@ -485,11 +504,5 @@ if __name__ == "__main__":
     app = App(argv, dir_example / "fy_rules.fyr", dir_example / "fy_help.fyh")
     app.run()
 
-    # print(app.args._fy_parser.tree.help_str, '\n')
-    # print(*app.args._fy_parser.tree["smiffer"]["rna"].rules.items(), '', sep = '\n')
-    # print(*app.args._fy_parser.tree["vgtools"]["convert"].rules.items(), '', sep = '\n')
-    # print(*app.args._fy_parser.tree["vgtools"]["compare"].rules.items(), '', sep = '\n')
-
 
 ################################################################################
-# os. get_terminal_size()

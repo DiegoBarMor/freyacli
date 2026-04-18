@@ -19,7 +19,7 @@
 @smutils
     !fyh:_ Utilities related to more advanced SMIF usage.
     @resids_nonbp
-        Print the set of non-base-paired residue indices in a given RNA structure.
+        !fyh:_ Print the set of non-base-paired residue indices in a given RNA structure.
         A residue is considered non-base-paired if it does not form a canonical base pair (UA, CG) with any other residue.
         Requires rnapolis.
     !@
