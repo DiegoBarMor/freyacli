@@ -13,9 +13,7 @@ class ArgsParser:
         self._current_node: fy.Subcommand = fy_parser.tree
 
         self._pending_posit: list[fy.ArgumentRule] = []
-        self._pending_flags: list[fy.ArgumentRule] = []
         self._current_rule: fy.ArgumentRule = _RULE_NONE
-        # self._prev_rule: fy.ArgumentRule = _RULE_NONE
         self._processing_flag_val: bool = False
 
     # --------------------------------------------------------------------------
@@ -50,10 +48,12 @@ class ArgsParser:
             if self._current_node.is_leaf(): break
 
         self._pending_posit = self._current_node.rules_posit.copy()
-        self._pending_flags = self._current_node.rules_flags.copy()
 
         for arg in args:
             self._parse_argument(arg)
+
+        if self._processing_flag_val and not self._current_rule.kw_is_optional:
+            self.help_and_exit(1, f"Expected a value for the last flag '--{self._current_rule.flag_long}'.")
 
         if not self._current_node.is_leaf(): # [NOTE] execution of the app must currently happen at a leaf node
             self.help_and_exit(1)
@@ -96,30 +96,12 @@ class ArgsParser:
             ### [NOTE] --help/-h is currently a reserved flag. [TODO] allow customization
             if "help" in arg: self.help_and_exit(0)
             self._parse_arg_flag_name(arg, arg[2:], is_short_name = False)
-            # self.help_and_exit(1, "TODO: flags long") # [TODO]
             return
 
         ###### FLAGS (SHORT NAME)
         if 'h' in arg: self.help_and_exit(0)
-        flags = arg[1:]
-        for i,flag in enumerate(flags): # allow concatenation of short flags (e.g. -abc == -a -b -c)
+        for flag in arg[1:]: # allow concatenation of short flags (e.g. -abc == -a -b -c)
             self._parse_arg_flag_name(arg, flag, is_short_name = True)
-
-            # [TODO] what happens with flags that take an argument? probably only the last short flag is allowed to take an argument, the rest should just be toggles
-
-        # self.help_and_exit(1, "TODO: flags short") # [TODO]
-
-
-    # --------------------------------------------------------------------------
-    def _parse_arg_positional(self, arg: str):
-        if self._current_rule is _RULE_NONE:
-            if not self._pending_posit:
-                self.help_and_exit(1, f"Unexpected positional argument: '{arg}'.")
-            self._current_rule = self._pending_posit.pop(0)
-
-        posit_is_full = self._current_rule.register_user_value(arg)
-        if posit_is_full:
-            self._set_current_rule(_RULE_NONE)
 
 
     # --------------------------------------------------------------------------
@@ -133,20 +115,39 @@ class ArgsParser:
 
         self._set_current_rule(matches[0])
 
-        if self._current_rule.arg_dtype is fy.ArgDType.TOGGLE:
+        self._processing_flag_val = self._current_rule.arg_dtype.stores_data()
+
+        if not self._processing_flag_val:
             self._current_rule.register_user_value("True") # string content doesn't matter, as long as it's not an empty string
             self._set_current_rule(_RULE_NONE)
             return
-
-        self._processing_flag_val = True
 
 
     # --------------------------------------------------------------------------
     def _parse_arg_flag_value(self, arg: str):
         if arg.startswith('-'):
             self._assert_default_prev_flag(arg, arg)
+            is_short_name = not arg.startswith('--')
+            flag = arg[1:] if is_short_name else arg[2:]
+            self._parse_arg_flag_name(arg, flag, is_short_name)
+            return
 
-        ... # [TODO]
+        flag_is_full = self._current_rule.register_user_value(arg)
+        if flag_is_full:
+            self._set_current_rule(_RULE_NONE)
+            self._processing_flag_val = False
+
+
+    # --------------------------------------------------------------------------
+    def _parse_arg_positional(self, arg: str):
+        if self._current_rule is _RULE_NONE:
+            if not self._pending_posit:
+                self.help_and_exit(1, f"Unexpected positional argument: '{arg}'.")
+            self._current_rule = self._pending_posit.pop(0)
+
+        posit_is_full = self._current_rule.register_user_value(arg)
+        if posit_is_full:
+            self._set_current_rule(_RULE_NONE)
 
 
     # --------------------------------------------------------------------------
@@ -167,7 +168,6 @@ class ArgsParser:
 
     # --------------------------------------------------------------------------
     def _set_current_rule(self, rule: fy.ArgumentRule):
-        # self._prev_rule = self._current_rule
         self._current_rule = rule
 
 

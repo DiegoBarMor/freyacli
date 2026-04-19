@@ -6,27 +6,28 @@ items=(
     ""
 
     "smiffer"
-    "smiffer prot"
-    "smiffer rna"
-    "smiffer ligand"
+    "smiffer prot" # err: missing required argument
+    "smiffer rna" # err: missing required argument
+    "smiffer ligand" # err: missing required argument
 
     "smutils"
-    "smutils resids_nonbp"
+    "smutils resids_nonbp" # err: missing required argument
 
     "apbs"
 
-    "vgtools"
-    "vgtools convert"
-    "vgtools pack"
-    "vgtools unpack"
-    "vgtools fix_cmap"
-    "vgtools average"
-    "vgtools summary"
-    "vgtools compare"
-    "vgtools rotate"
+    "vgtools" # err: missing required argument
+    "vgtools convert" # err: missing required argument
+    "vgtools pack" # err: missing required argument
+    "vgtools unpack" # err: missing required argument
+    "vgtools fix_cmap" # err: missing required argument
+    "vgtools average" # err: missing required argument
+    "vgtools summary" # err: missing required argument
+    "vgtools compare" # err: missing required argument
+    "vgtools rotate" # err: missing required argument
 
-    ### Should trigger errors:
-    "unknown_command"
+
+    "unknown_command" # err: unrecognized command
+    # "smiffer prot fake_path.pdb"
 )
 for item in "${items[@]}"; do
     echo "========== TEST: $item =========="

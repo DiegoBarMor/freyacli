@@ -26,7 +26,7 @@ class ArgDType(Enum):
 
     # --------------------------------------------------------------------------
     def stores_data(self) -> bool:
-        return self != ArgDType.TOGGLE
+        return self != ArgDType.NONE and self != ArgDType.TOGGLE
 
 
 # //////////////////////////////////////////////////////////////////////////////
