@@ -2,6 +2,9 @@ import freyacli as fy
 
 # //////////////////////////////////////////////////////////////////////////////
 class ArgumentRule:
+    _INDENT_LONG_DESC = 8
+
+    # --------------------------------------------------------------------------
     def __init__(self, raw_rule: str):
         self._raw_rule = raw_rule
         self._raw_user_value: str = ""
@@ -15,7 +18,7 @@ class ArgumentRule:
         self.flag_long: str         # used with a double preceding dash (e.g. "--flag")
         self.default_value: str     # when a default value is present, it's placed at the beginning of the respective help string, right after the flag type (e.g. "INT (default: 0)").
         self.flag_type: fy.FlagType # placed at the beginning of the help string. TOGGLE type is used for flags with no arguments, and the respective type (e.g. STR, INT) is used for flags with arguments.
-        self.n_args: int            # when larger than 1, the help string will display ...; when -1 the argument can be repeated indefinitely; otherwise, the exact number of arguments is displayed after ... (e.g. "--flag <value> ... (3)")
+        self.n_args: int            # when larger than 1, the help string will display ...; when -1 the argument can be repeated indefinitely; otherwise, the exact number of arguments is displayed after ... (e.g. "--flag <value>...(3)")
 
         self.is_optional = raw_rule.startswith('~')
 
@@ -105,22 +108,69 @@ class ArgumentRule:
 
 
     # --------------------------------------------------------------------------
-    def _get_usage_str_positional(self) -> str:
+    def get_usage_str_positional(self) -> str:
         """Usage string is only relevant for positionals. Flag arguments are summarized as [options...] in the usage string. A more detailed description of them is provided in the longer help string."""
 
         if not self.is_positional:
             raise fy.FreyaSyntaxError(f"Usage string can only be generated for positional arguments, but got a flag argument ('{self._raw_rule}').")
 
-        buffer = fy.Color.blue(f"<{self.name}{self._get_str_n_args()}>")
+        buffer = f"<{self.name}{self._get_str_n_args()}>"
         if self.is_optional: buffer = f"[{buffer}]"
+        return fy.Color.blue(buffer)
+
+    # --------------------------------------------------------------------------
+    def get_help_string_description(self) -> str:
+        preffix = ""
+        if self.is_optional: preffix += "[optional] "
+        if self.flag_type.stores_data():
+            preffix += self.flag_type.name
+            if self.default_value: preffix += f" (default: {self.default_value})"
+            preffix += ". "
+
+        arg_desc = self._get_arg_description()
+        long_desc = self.help_str.wrapped_text(
+            indent = self._INDENT_LONG_DESC,
+            width = fy.WIDTH_TERMINAL - self._INDENT_LONG_DESC,
+            preffix = fy.Color.yellow(preffix)
+        )
+        return f"{arg_desc}\n{self._INDENT_LONG_DESC*' '}{long_desc}"
+
+
+    # --------------------------------------------------------------------------
+    def _get_arg_description(self) -> str:
+        buffer = f"<{self.name}{self._get_str_n_args()}>"
+
+        if self.is_positional:
+            if self.is_optional: buffer = f"[{buffer}]"
+            return fy.Color.blue("    " + buffer)
+
+
+        if self.kw_is_optional: buffer = f"[{buffer}]"
+
+        if self.is_optional:
+            str_flags_0 = "["
+            str_flags_1 = "]"
+        else:
+            str_flags_0 = ""
+            str_flags_1 = ""
+
+        flag_short = f"-{self.flag_short}" if self.flag_short else ""
+        flag_long  = f"--{self.flag_long}" if self.flag_long  else ""
+
+        str_flags_0 += (
+            f"{flag_short}, {flag_long}" if self.flag_long else flag_short
+        ) if self.flag_short else flag_long
+
+        buffer = f"    {fy.Color.green(str_flags_0)} {fy.Color.blue(buffer)}"
+        if str_flags_1: buffer += fy.Color.green(str_flags_1)
         return buffer
 
 
     # --------------------------------------------------------------------------
     def _get_str_n_args(self) -> str:
-        if self.n_args == -1: return " ..."
+        if self.n_args == -1: return "..."
         if self.n_args <= 1: return ""
-        return f" ... ({self.n_args})"
+        return f"...({self.n_args})"
 
 
 # //////////////////////////////////////////////////////////////////////////////

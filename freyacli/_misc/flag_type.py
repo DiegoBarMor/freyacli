@@ -22,4 +22,9 @@ class FlagType(Enum):
         raise fy.FreyaSyntaxError(f"Invalid flag type specified: '{s}'")
 
 
+    # --------------------------------------------------------------------------
+    def stores_data(self) -> bool:
+        return self != FlagType.TOGGLE
+
+
 # //////////////////////////////////////////////////////////////////////////////

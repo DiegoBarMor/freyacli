@@ -24,6 +24,9 @@ items=(
     "vgtools summary"
     "vgtools compare"
     "vgtools rotate"
+
+    ### Should trigger errors:
+    "unknown_command"
 )
 for item in "${items[@]}"; do
     echo "========== TEST: $item =========="

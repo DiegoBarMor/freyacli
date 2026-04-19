@@ -5,7 +5,7 @@ from ._utils.color import Color
 
 from ._parsers.components.help_str import HelpStr
 from ._parsers.components.argument_rule import ArgumentRule
-from ._parsers.components.subcommand import Subcomand
+from ._parsers.components.subcommand import Subcommand
 
 from ._parsers.freya_parser import FreyaParser
 from ._parsers.args_parser import ArgsParser

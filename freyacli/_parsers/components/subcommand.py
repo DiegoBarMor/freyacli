@@ -1,36 +1,49 @@
 import freyacli as fy
 
 # //////////////////////////////////////////////////////////////////////////////
-class Subcomand:
-    def __init__(self, name: str, parent: "Subcomand|None"):
+class Subcommand:
+    def __init__(self, name: str, parent: "Subcommand|None"):
         self.name = name
-        self.parent: "Subcomand|None" = parent
-        self.children: dict[str, "Subcomand"] = {}
+        self.parent: "Subcommand|None" = parent
+        self.children: dict[str, "Subcommand"] = {}
         self.depth = 0 if self.is_root() else parent.depth + 1
-        self.rules: dict[str, fy.ArgumentRule] = {}
         self.help_str: fy.HelpStr = fy.HelpStr()
+
+        self.rules: dict[str, fy.ArgumentRule] = {}
+        self.rules_posit: list[fy.ArgumentRule] = []
+        self.rules_flags: list[fy.ArgumentRule] = []
 
     # --------------------------------------------------------------------------
     def __repr__(self):
         values = ','.join('' if v is None else str(v) for v in self.children.values())
-        return f"Subcomand({self.depth}:{self.name}){{{values if values else ''}}}"
+        return f"Subcommand({self.depth}:{self.name}){{{values if values else ''}}}"
 
     # --------------------------------------------------------------------------
-    def __getitem__(self, name: str) -> "Subcomand":
+    def __getitem__(self, name: str) -> "Subcommand":
         return self.get_child(name)
 
     # --------------------------------------------------------------------------
-    def add_child(self, name: str) -> "Subcomand":
+    def add_child(self, name: str) -> "Subcommand":
         self._assert_unique_child(name)
-        child = Subcomand(name, self)
+        child = Subcommand(name, self)
         self.children[name] = child
         return child
 
     # --------------------------------------------------------------------------
-    def get_child(self, name: str) -> "Subcomand":
+    def get_child(self, name: str) -> "Subcommand":
         if name not in self.children:
             raise fy.FreyaSyntaxError(f"Branch '{name}' is not defined in the CLI rules.")
         return self.children[name]
+
+    # --------------------------------------------------------------------------
+    def add_rule(self, rule: fy.ArgumentRule):
+        if rule.name in self.rules:
+            raise fy.FreyaSyntaxError(f"Duplicate definition of '{rule}'.")
+
+        self.rules[rule.name] = rule
+        lst = self.rules_posit if rule.is_positional else self.rules_flags
+        lst.append(rule)
+
 
     # --------------------------------------------------------------------------
     def is_root(self) -> bool: return self.parent is None
@@ -48,10 +61,10 @@ class Subcomand:
 
     # --------------------------------------------------------------------------
     def _get_usage_str(self, py_name: str) -> str:
-        preffix = "  " + py_name + ' '.join(self._get_path_to_root())
+        preffix = "    " + py_name + ' '.join(self._get_path_to_root())
 
         usage_posits = ' '.join(
-            rule._get_usage_str_positional() for rule in self._iter_rules_positional()
+            rule.get_usage_str_positional() for rule in self.rules_posit
         )
         if usage_posits: usage_posits += ' '
 
@@ -59,12 +72,7 @@ class Subcomand:
             ### [NOTE] options isn't currently supported for non-leaf nodes
             return f"{preffix} {usage_posits}{fy.Color.green('[options...]')}"
 
-        return f"{preffix} {fy.Color.yellow('COMMAND')} ..."
-
-
-    # --------------------------------------------------------------------------
-    def _get_str_leaf_arguments(self) -> str:
-        return ""
+        return f"{preffix} {fy.Color.magenta('COMMAND')} ..."
 
 
     # --------------------------------------------------------------------------
@@ -74,17 +82,52 @@ class Subcomand:
         width_desc = max(1, fy.WIDTH_TERMINAL - width_name)
 
         rows_commands = '\n'.join((
-            fy.Color.yellow(fy.HelpStr.pad_name(name, max_name_len)) +\
+            fy.Color.magenta(fy.HelpStr.pad_name(name, max_name_len)) +\
                 child.help_str.wrapped_text(width_name, width_desc)
             for name, child in self.children.items()
         ))
 
         return '\n'.join((
-            fy.Color.yellow("commands:"),
-            "  The following subcommands are available:",
+            fy.Color.magenta("commands:", bright = False),
+            "    The following subcommands are available:",
             "",
-            "  COMMAND",
             rows_commands,
+        ))
+
+
+    # --------------------------------------------------------------------------
+    def _get_str_leaf_arguments(self) -> str:
+        return '\n'.join((
+            self._get_str_leaf_posits(),
+            self._get_str_leaf_flags(),
+        ))
+
+
+    # --------------------------------------------------------------------------
+    def _get_str_leaf_posits(self) -> str:
+        if not self.rules_posit: return ""
+
+        rows_posits = '\n'.join((
+            rule.get_help_string_description()
+            for rule in self.rules_posit
+        ))
+        return '\n'.join((
+            fy.Color.blue("positional arguments:", bright = False),
+            rows_posits, "",
+        ))
+
+
+    # --------------------------------------------------------------------------
+    def _get_str_leaf_flags(self) -> str:
+        if not self.rules_flags: return ""
+
+        rows_flags = '\n'.join((
+            rule.get_help_string_description()
+            for rule in self.rules_flags
+        ))
+        return '\n'.join((
+            fy.Color.green("options:", bright = False),
+            rows_flags, "",
         ))
 
 
@@ -101,11 +144,6 @@ class Subcomand:
     def _assert_unique_child(self, name: str):
         if name in self.children:
             raise fy.FreyaSyntaxError(f"Duplicate child branch '{name}' specified inside the same branch.")
-
-
-    # --------------------------------------------------------------------------
-    def _iter_rules_positional(self):
-        yield from filter(lambda rule: rule.is_positional, self.rules.values())
 
 
 # //////////////////////////////////////////////////////////////////////////////

@@ -8,7 +8,7 @@ class FreyaParser:
         rules = self._preprocess_macros(raw_rules)
         helps = self._preprocess_macros(raw_help)
 
-        self.tree = fy.Subcomand('', None)
+        self.tree = fy.Subcommand('', None)
         self.node = self.tree
         self._tree_build_rules(rules)
         self._tree_add_helps(helps)
@@ -25,7 +25,7 @@ class FreyaParser:
 
     # --------------------------------------------------------------------------
     def _tree_build_rules(self, rules: str):
-        node: fy.Subcomand = self.tree
+        node: fy.Subcommand = self.tree
         for token in rules.split():
             if token.startswith('@'):
                 name = token[1:]
@@ -38,11 +38,7 @@ class FreyaParser:
                 node = node.parent
                 continue
 
-            rule = fy.ArgumentRule(token)
-            if rule.name in node.rules:
-                raise fy.FreyaSyntaxError(f"Duplicate definition of '{rule}'.")
-
-            node.rules[rule.name] = rule
+            node.add_rule(fy.ArgumentRule(token))
 
         if not node.is_root():
             raise fy.FreyaSyntaxError(f"Unterminated branch (missing !@ keyword {node.depth} times)")
@@ -54,7 +50,7 @@ class FreyaParser:
             idx = s.find(' ')
             return len(s) if idx == -1 else idx
 
-        node: fy.Subcomand = self.tree
+        node: fy.Subcommand = self.tree
         help_str: fy.HelpStr = self.tree.help_str
 
         for row in helps.split('\n'):

@@ -16,9 +16,9 @@ class HelpStr:
         self.string += s
 
     # --------------------------------------------------------------------------
-    def wrapped_text(self, indent: int, width: int) -> str:
+    def wrapped_text(self, indent: int, width: int, preffix: str = "") -> str:
         out = ""
-        buffer = self.string.replace('\n', ' ')
+        buffer = preffix + self.string.replace('\n', ' ')
         while buffer:
             if len(buffer) > width:
                 row = buffer[:width]
@@ -43,7 +43,7 @@ class HelpStr:
     # --------------------------------------------------------------------------
     @staticmethod
     def pad_name(s: str, max_len: int) -> str:
-        return f"    {s.ljust(max_len)}  - "
+        return f"    {s.ljust(max_len)}    "
 
 
 # //////////////////////////////////////////////////////////////////////////////
