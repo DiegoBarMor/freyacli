@@ -26,14 +26,32 @@ class ArgsParser:
 
 
     # --------------------------------------------------------------------------
-    def help_and_exit(self, exit_code: int, err_message: str = ""):
-        if err_message: err_message = fy.Color.red(
-            fy.HelpStr(err_message).nl_surround(), bright = False
-        )
+    def get_path_to_root(self) -> list[str]:
+        return self._current_node.get_path_to_root()
+
+
+    # --------------------------------------------------------------------------
+    def get_arg_keys(self) -> list[str]:
+        return list(self._user_values.keys())
+
+
+    # --------------------------------------------------------------------------
+    def get_arg_value(self, key: str):
+        if key not in self._user_values:
+            raise KeyError(f"Key '{key}' not found in the stored argument values.")
+        return self._user_values[key]
+
+
+    # --------------------------------------------------------------------------
+    def help_and_exit(self, exit_code: int, *err_messages: str):
+        err_messages = list(err_messages)
+        for i,err in enumerate(err_messages):
+            err_messages[i] = fy.Color.red(err, bright = False)
+
         print('\n'.join((
             f"{self._app_name} ({fy.Color.red('v'+self._version)}). Usage:",
             self._current_node.str_help_long(self.py_name),
-            err_message,
+            *err_messages,
         )))
         exit(exit_code)
 
@@ -41,6 +59,7 @@ class ArgsParser:
     # --------------------------------------------------------------------------
     def _parse_args(self, args: list[str]) -> None:
         self._current_node = self._fy_parser.tree
+
 
         while args:
             arg = args.pop(0)
@@ -66,9 +85,16 @@ class ArgsParser:
             if rule.is_optional: continue
             self.help_and_exit(1, f"Missing required argument: '{rule.name}'.")
 
-        self._user_values = { # [TODO] parse raw user values
-            rule.name: rule._raw_user_values for rule in self._current_node.rules.values()
+        self._user_values = {
+            k: rule.parse_user_values() for k,rule in self._current_node.rules.items()
         }
+        errors = [
+            v.err_message for v in self._user_values.values()
+            if isinstance(v, fy.ArgDTypeError)
+        ]
+        if not errors: return
+
+        self.help_and_exit(1, *errors)
 
 
     # --------------------------------------------------------------------------
@@ -143,7 +169,7 @@ class ArgsParser:
         if self._current_rule is _RULE_NONE:
             if not self._pending_posit:
                 self.help_and_exit(1, f"Unexpected positional argument: '{arg}'.")
-            self._current_rule = self._pending_posit.pop(0)
+            self._set_current_rule(self._pending_posit.pop(0))
 
         posit_is_full = self._current_rule.register_user_value(arg)
         if posit_is_full:
@@ -169,6 +195,7 @@ class ArgsParser:
     # --------------------------------------------------------------------------
     def _set_current_rule(self, rule: fy.ArgumentRule):
         self._current_rule = rule
+        self._current_rule.touch()
 
 
 # //////////////////////////////////////////////////////////////////////////////

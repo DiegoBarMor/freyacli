@@ -27,7 +27,7 @@ items=(
 
 
     "unknown_command" # err: unrecognized command
-    # "smiffer prot fake_path.pdb"
+    "smiffer prot fake_path.pdb"
 )
 for item in "${items[@]}"; do
     echo "========== TEST: $item =========="

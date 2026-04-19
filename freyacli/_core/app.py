@@ -1,10 +1,11 @@
 import os
 from pathlib import Path
+from abc import ABC, abstractmethod
 
 import freyacli as fy
 
 # //////////////////////////////////////////////////////////////////////////////
-class App:
+class App(ABC):
     _APP_NAME = "FreyacliApp" # override these values
     _VERSION = "0.1.0"
 
@@ -19,9 +20,29 @@ class App:
 
 
     # --------------------------------------------------------------------------
+    @abstractmethod
     def run(self):
-        print("Do something...") # [WIP]
-        print(self.args._user_values)
+        """
+        Override this method to implement the logic of the app.
+        You can use the methods `get_path_to_root`, `get_arg_keys` and `get_arg_value` to access the parsed arguments.
+        """
+        pass
+
+
+    # --------------------------------------------------------------------------
+    def get_path_to_root(self) -> list[str]:
+        return self.args.get_path_to_root()
+
+
+    # --------------------------------------------------------------------------
+    def get_arg_keys(self) -> list[str]:
+        return self.args.get_arg_keys()
+
+
+    # --------------------------------------------------------------------------
+    def get_arg_value(self, key: str):
+        return self.args.get_arg_value(key)
+
 
 
 # //////////////////////////////////////////////////////////////////////////////

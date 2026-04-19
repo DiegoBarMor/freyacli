@@ -1,4 +1,5 @@
 from ._misc.freya_syntax_error import FreyaSyntaxError
+from ._misc.arg_dtype_error import ArgDTypeError
 from ._misc.arg_dtype import ArgDType
 
 from ._utils.color import Color

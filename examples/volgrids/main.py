@@ -10,10 +10,21 @@ class App(fy.App):
     _APP_NAME = "volgrids"
     _VERSION = "1.2.3"
 
+    # --------------------------------------------------------------------------
     def run(self):
-        values = self.args._user_values
-        print(*values.items(), sep="\n")
-        # self.args.help_and_exit(1) # [WIP]
+        print("A: Do something with the path of subcommands:")
+        print(f"\t{self.get_path_to_root()}")
+
+        print()
+        print("B: Do something with the keys of the stored values:")
+        keys = self.get_arg_keys()
+        print(f"\t{keys}")
+
+        print()
+        print("C: Use the keys to do something with the stored values:")
+        for key in keys:
+            value = self.get_arg_value(key)
+            print(f"\t{key} = {value} ({type(value)})")
 
 
 ################################################################################

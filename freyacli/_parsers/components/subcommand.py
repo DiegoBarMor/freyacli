@@ -68,6 +68,17 @@ class Subcommand:
 
 
     # --------------------------------------------------------------------------
+    def get_path_to_root(self) -> list[str]:
+        path = []
+        node = self
+        while node:
+            if node.parent is None: break
+            path.append(node.name)
+            node = node.parent
+        return path[::-1]
+
+
+    # --------------------------------------------------------------------------
     def str_help_long(self, py_name: str) -> str:
         return '\n'.join((
             self._get_usage_str(py_name),
@@ -79,7 +90,8 @@ class Subcommand:
 
     # --------------------------------------------------------------------------
     def _get_usage_str(self, py_name: str) -> str:
-        preffix = "    " + py_name + ' '.join(self._get_path_to_root())
+        path_to_root = [py_name] + self.get_path_to_root()
+        preffix = "    " + ' '.join(path_to_root)
 
         usage_posits = ' '.join(
             rule.get_usage_str_positional() for rule in self.rules_posit
@@ -147,16 +159,6 @@ class Subcommand:
             fy.Color.green("options:", bright = False),
             rows_flags, "",
         ))
-
-
-    # --------------------------------------------------------------------------
-    def _get_path_to_root(self) -> list[str]:
-        path = []
-        node = self
-        while node:
-            path.append(node.name)
-            node = node.parent
-        return path[::-1]
 
 
     # --------------------------------------------------------------------------
