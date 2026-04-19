@@ -1,12 +1,12 @@
 from ._misc.freya_syntax_error import FreyaSyntaxError
 from ._misc.arg_dtype_error import ArgDTypeError
-from ._misc.arg_dtype import ArgDType
+from ._misc.help_str import HelpStr
 
 from ._utils.color import Color
 
-from ._parsers.components.help_str import HelpStr
-from ._parsers.components.argument_rule import ArgumentRule
-from ._parsers.components.subcommand import Subcommand
+from ._arguments.arg_dtype import ArgDType
+from ._arguments.argument_rule import ArgumentRule
+from ._arguments.subcommand import Subcommand
 
 from ._parsers.freya_parser import FreyaParser
 from ._parsers.args_parser import ArgsParser
