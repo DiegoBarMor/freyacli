@@ -3,7 +3,8 @@ from enum import Enum, auto
 import freyacli as fy
 
 # //////////////////////////////////////////////////////////////////////////////
-class FlagType(Enum):
+class ArgDType(Enum):
+    NONE   = auto()
     TOGGLE = auto()
     STR    = auto()
     PATH   = auto()
@@ -12,7 +13,8 @@ class FlagType(Enum):
 
     # --------------------------------------------------------------------------
     @classmethod
-    def from_str(cls, s: str) -> "FlagType":
+    def from_str(cls, s: str | None) -> "ArgDType":
+        if s is None: return cls.NONE
         s = s.lower()
         if not s:        return cls.TOGGLE
         if s == "str":   return cls.STR
@@ -24,7 +26,7 @@ class FlagType(Enum):
 
     # --------------------------------------------------------------------------
     def stores_data(self) -> bool:
-        return self != FlagType.TOGGLE
+        return self != ArgDType.TOGGLE
 
 
 # //////////////////////////////////////////////////////////////////////////////

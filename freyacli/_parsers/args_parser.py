@@ -1,14 +1,22 @@
 import freyacli as fy
 
+_RULE_NONE = fy.ArgumentRule(None)
+
 # //////////////////////////////////////////////////////////////////////////////
 class ArgsParser:
     def __init__(self, fy_parser: fy.FreyaParser, app_name: str, version: str):
-        self.args = {}
-        self._app_name = app_name
-        self._version = version
+        self._app_name: str = app_name
+        self._version: str = version
+        self._user_values = {}
 
-        self._fy_parser = fy_parser
-        self._current_node = fy_parser.tree
+        self._fy_parser: fy.FreyaParser = fy_parser
+        self._current_node: fy.Subcommand = fy_parser.tree
+
+        self._pending_posit: list[fy.ArgumentRule] = []
+        self._pending_flags: list[fy.ArgumentRule] = []
+        self._current_rule: fy.ArgumentRule = _RULE_NONE
+        # self._prev_rule: fy.ArgumentRule = _RULE_NONE
+        self._processing_flag_val: bool = False
 
     # --------------------------------------------------------------------------
     def parse_args(self, args: list[str]):
@@ -20,63 +28,7 @@ class ArgsParser:
 
 
     # --------------------------------------------------------------------------
-    def _parse_args(self, args: list[str]) -> None:
-        self._current_node = self._fy_parser.tree
-
-        for arg in args:
-            if self._current_node.is_leaf():
-                self._parse_argument(arg)
-                continue
-
-            self._parse_subcommand(arg)
-
-        if not self._current_node.is_leaf(): # [NOTE] execution of the app must currently happen at a leaf node
-            self._help_and_exit(1)
-
-
-    # --------------------------------------------------------------------------
-    def _parse_subcommand(self, next_subcommand: str):
-        if next_subcommand not in self._current_node.children:
-            self._help_and_exit(1, f"Unrecognized command: '{next_subcommand}'.")
-
-        self._current_node = self._current_node.get_child(next_subcommand)
-
-
-    # --------------------------------------------------------------------------
-    def _parse_argument(self, arg: str):
-        ###### POSITIONAL ARGUMENTS
-        if not arg.startswith('-'):
-            self._help_and_exit(1, "TODO: posits") # [TODO]
-            return
-
-        ###### FLAGS (LONG NAME)
-        if arg.startswith("--"):
-            ### [NOTE] --help/-h is currently a reserved flag. [TODO] allow customization
-            if "help" in arg: self._help_and_exit(0)
-            self._parse_flag(arg, arg[2:], is_short_name = False)
-            self._help_and_exit(1, "TODO: flags long") # [TODO]
-            return
-
-        ###### FLAGS (SHORT NAME)
-        if 'h' in arg: self._help_and_exit(0)
-        for flag in arg[1:]: # allow concatenation of short flags (e.g. -abc == -a -b -c)
-            self._parse_flag(arg, flag, is_short_name = True)
-
-            # [TODO] what happens with flags that take an argument? probably only the last short flag is allowed to take an argument, the rest should just be toggles
-
-        self._help_and_exit(1, "TODO: flags short") # [TODO]
-
-
-    # --------------------------------------------------------------------------
-    def _parse_flag(self, arg: str, flag: str, is_short_name: bool):
-        matches = self._current_node.get_args_with_flag(flag, is_short_name)
-
-        if not matches:
-            self._help_and_exit(1, f"Unrecognized flag: '{flag}' (provided as '{arg}').")
-
-
-    # --------------------------------------------------------------------------
-    def _help_and_exit(self, exit_code: int, err_message: str = ""):
+    def help_and_exit(self, exit_code: int, err_message: str = ""):
         if err_message: err_message = fy.Color.red(
             fy.HelpStr(err_message).nl_surround(), bright = False
         )
@@ -86,6 +38,137 @@ class ArgsParser:
             err_message,
         )))
         exit(exit_code)
+
+
+    # --------------------------------------------------------------------------
+    def _parse_args(self, args: list[str]) -> None:
+        self._current_node = self._fy_parser.tree
+
+        while args:
+            arg = args.pop(0)
+            self._parse_subcommand(arg)
+            if self._current_node.is_leaf(): break
+
+        self._pending_posit = self._current_node.rules_posit.copy()
+        self._pending_flags = self._current_node.rules_flags.copy()
+
+        for arg in args:
+            self._parse_argument(arg)
+
+        if not self._current_node.is_leaf(): # [NOTE] execution of the app must currently happen at a leaf node
+            self.help_and_exit(1)
+
+        for rule in self._current_node.rules.values():
+            if rule._raw_user_values: continue
+            if rule.default_value:
+                rule.register_user_value(rule.default_value)
+                continue
+            if rule.is_optional: continue
+            self.help_and_exit(1, f"Missing required argument: '{rule.name}'.")
+
+        self._user_values = { # [TODO] parse raw user values
+            rule.name: rule._raw_user_values for rule in self._current_node.rules.values()
+        }
+
+
+    # --------------------------------------------------------------------------
+    def _parse_subcommand(self, next_subcommand: str):
+        if next_subcommand not in self._current_node.children:
+            self.help_and_exit(1, f"Unrecognized command: '{next_subcommand}'.")
+
+        self._current_node = self._current_node.get_child(next_subcommand)
+
+
+    # --------------------------------------------------------------------------
+    def _parse_argument(self, arg: str):
+        if self._processing_flag_val:
+            self._parse_arg_flag_value(arg)
+            return
+
+        ###### POSITIONAL ARGUMENTS
+        if not arg.startswith('-'):
+            self._parse_arg_positional(arg)
+            return
+
+
+        ###### FLAGS (LONG NAME)
+        if arg.startswith("--"):
+            ### [NOTE] --help/-h is currently a reserved flag. [TODO] allow customization
+            if "help" in arg: self.help_and_exit(0)
+            self._parse_arg_flag_name(arg, arg[2:], is_short_name = False)
+            # self.help_and_exit(1, "TODO: flags long") # [TODO]
+            return
+
+        ###### FLAGS (SHORT NAME)
+        if 'h' in arg: self.help_and_exit(0)
+        flags = arg[1:]
+        for i,flag in enumerate(flags): # allow concatenation of short flags (e.g. -abc == -a -b -c)
+            self._parse_arg_flag_name(arg, flag, is_short_name = True)
+
+            # [TODO] what happens with flags that take an argument? probably only the last short flag is allowed to take an argument, the rest should just be toggles
+
+        # self.help_and_exit(1, "TODO: flags short") # [TODO]
+
+
+    # --------------------------------------------------------------------------
+    def _parse_arg_positional(self, arg: str):
+        if self._current_rule is _RULE_NONE:
+            if not self._pending_posit:
+                self.help_and_exit(1, f"Unexpected positional argument: '{arg}'.")
+            self._current_rule = self._pending_posit.pop(0)
+
+        posit_is_full = self._current_rule.register_user_value(arg)
+        if posit_is_full:
+            self._set_current_rule(_RULE_NONE)
+
+
+    # --------------------------------------------------------------------------
+    def _parse_arg_flag_name(self, arg: str, flag: str, is_short_name: bool):
+        if self._processing_flag_val:
+            self._assert_default_prev_flag(arg, flag)
+
+        matches = self._current_node.get_args_with_flag(flag, is_short_name)
+        if not matches:
+            self.help_and_exit(1, f"Unrecognized flag: '{flag}' (provided as '{arg}').")
+
+        self._set_current_rule(matches[0])
+
+        if self._current_rule.arg_dtype is fy.ArgDType.TOGGLE:
+            self._current_rule.register_user_value("True") # string content doesn't matter, as long as it's not an empty string
+            self._set_current_rule(_RULE_NONE)
+            return
+
+        self._processing_flag_val = True
+
+
+    # --------------------------------------------------------------------------
+    def _parse_arg_flag_value(self, arg: str):
+        if arg.startswith('-'):
+            self._assert_default_prev_flag(arg, arg)
+
+        ... # [TODO]
+
+
+    # --------------------------------------------------------------------------
+    def _assert_default_prev_flag(self, arg: str, flag: str):
+        """
+        situation: a new flag is used before providing a value for the previous flag
+        this is usually incorrect, unless the previous flag is a toggle
+        (in which case this method shouldn't be reached). Alternativelt, if the
+        previous flag has a default value, that value will be set instead
+        """
+        if not self._current_rule.default_value:
+            self.help_and_exit(1, f"Expected a value for the previous flag '--{self._current_rule.flag_long}', before using '{flag}' (provided as '{arg}').")
+
+        self._current_rule.register_user_value(self._current_rule.default_value)
+        self._processing_flag_val = False
+        self._set_current_rule(_RULE_NONE)
+
+
+    # --------------------------------------------------------------------------
+    def _set_current_rule(self, rule: fy.ArgumentRule):
+        # self._prev_rule = self._current_rule
+        self._current_rule = rule
 
 
 # //////////////////////////////////////////////////////////////////////////////

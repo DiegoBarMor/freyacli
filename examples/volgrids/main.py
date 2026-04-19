@@ -11,7 +11,9 @@ class App(fy.App):
     _VERSION = "1.2.3"
 
     def run(self):
-        self.args._help_and_exit(1) # [WIP]
+        values = self.args._user_values
+        print(*values.items(), sep="\n")
+        # self.args.help_and_exit(1) # [WIP]
 
 
 ################################################################################

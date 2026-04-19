@@ -20,8 +20,8 @@ class App:
 
     # --------------------------------------------------------------------------
     def run(self):
-        print("Do something...")
-        print(self.args.args)
+        print("Do something...") # [WIP]
+        print(self.args._user_values)
 
 
 # //////////////////////////////////////////////////////////////////////////////

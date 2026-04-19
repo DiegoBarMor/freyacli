@@ -5,20 +5,24 @@ class ArgumentRule:
     _INDENT_LONG_DESC = 8
 
     # --------------------------------------------------------------------------
-    def __init__(self, raw_rule: str):
+    def __init__(self, raw_rule: str | None):
         self._raw_rule = raw_rule
-        self._raw_user_value: str = ""
         self.help_str: fy.HelpStr = fy.HelpStr()
 
-        self.name: str              # name that will be displayed between <> (e.g. "<value>") in the help string, and used to fetch any given values
-        self.is_positional: bool    # True when the argument doesn't need a preceding "flag" (e.g. just "<value>" instead of "--flag <value>")
-        self.is_optional: bool      # display with surrounding [] in the help string (e.g. "[<value>]")
-        self.kw_is_optional: bool   # these are flags that can optionally have a keyword argument, e.g. "--flag <value>" and "--flag" are both valid. Represented as "--flag [<value>]"
-        self.flag_short: str        # must be 1 character long. It's always used with a single preceding dash (e.g. "-f")
-        self.flag_long: str         # used with a double preceding dash (e.g. "--flag")
-        self.default_value: str     # when a default value is present, it's placed at the beginning of the respective help string, right after the flag type (e.g. "INT (default: 0)").
-        self.flag_type: fy.FlagType # placed at the beginning of the help string. TOGGLE type is used for flags with no arguments, and the respective type (e.g. STR, INT) is used for flags with arguments.
-        self.n_args: int            # when larger than 1, the help string will display ...; when -1 the argument can be repeated indefinitely; otherwise, the exact number of arguments is displayed after ... (e.g. "--flag <value>...(3)")
+        self._raw_user_values: list[str] = [] # raw string values provided by the user
+        self._n_user_values: int = 0 # amount of values provided by the user so far
+
+        self.name: str = ""               # name that will be displayed between <> (e.g. "<value>") in the help string, and used to fetch any given values
+        self.is_positional: bool = False  # True when the argument doesn't need a preceding "flag" (e.g. just "<value>" instead of "--flag <value>")
+        self.is_optional: bool = False    # display with surrounding [] in the help string (e.g. "[<value>]")
+        self.kw_is_optional: bool = False # these are flags that can optionally have a keyword argument, e.g. "--flag <value>" and "--flag" are both valid. Represented as "--flag [<value>]"
+        self.flag_short: str = ""         # must be 1 character long. It's always used with a single preceding dash (e.g. "-f")
+        self.flag_long: str = ""          # used with a double preceding dash (e.g. "--flag")
+        self.default_value: str = ""      # when a default value is present, it's placed at the beginning of the respective help string, right after the flag type (e.g. "INT (default: 0)").
+        self.arg_dtype = fy.ArgDType.NONE # placed at the beginning of the help string. TOGGLE type is used for flags with no arguments, and the respective type (e.g. STR, INT) is used for flags with arguments.
+        self.n_values: int = 0            # when larger than 1, the help string will display ...; when -1 the argument can be repeated indefinitely; otherwise, the exact number of arguments is displayed after ... (e.g. "--flag <value>...(3)")
+
+        if raw_rule is None: return
 
         self.is_optional = raw_rule.startswith('~')
 
@@ -38,17 +42,25 @@ class ArgumentRule:
 
         (buffer,
             self.kw_is_optional,
-            self.n_args
+            self.n_values
         ) = self._parse_n_args(buffer)
 
-        self.flag_type = fy.FlagType.from_str(buffer)
+        self.arg_dtype = fy.ArgDType.from_str(buffer)
 
 
     # --------------------------------------------------------------------------
     def __repr__(self):
         return f"Arg(opt={self.is_optional} posit={self.is_positional} fs={self.flag_short} fl={self.flag_long} "+\
-            f"opt_kw={self.kw_is_optional} default={self.default_value} ftype={self.flag_type} nargs={self.n_args} "+\
+            f"opt_kw={self.kw_is_optional} default={self.default_value} dtype={self.arg_dtype} nargs={self.n_values} "+\
             f"help='{self.help_str.string[:20]}...')"
+
+
+    # --------------------------------------------------------------------------
+    def register_user_value(self, value: str) -> bool:
+        """Returns `True` when the argument is "full" (i.e. won't accept any more user values)"""
+        self._raw_user_values.append(value)
+        self._n_user_values += 1
+        return self.n_values != -1 and self._n_user_values >= self.n_values
 
 
     # --------------------------------------------------------------------------
@@ -67,8 +79,8 @@ class ArgumentRule:
     def get_help_string_description(self) -> str:
         preffix = ""
         if self.is_optional: preffix += "[optional] "
-        if self.flag_type.stores_data():
-            preffix += self.flag_type.name
+        if self.arg_dtype.stores_data():
+            preffix += self.arg_dtype.name
             if self.default_value: preffix += f" (default: {self.default_value})"
             preffix += ". "
 
@@ -116,18 +128,18 @@ class ArgumentRule:
 
             return "", False, 0
 
-        n_args, buffer = self._assert_split_into_2(buffer, '.')
-        kw_is_optional = n_args.startswith('~')
+        n_values, buffer = self._assert_split_into_2(buffer, '.')
+        kw_is_optional = n_values.startswith('~')
 
-        if kw_is_optional: n_args = n_args[1:]
+        if kw_is_optional: n_values = n_values[1:]
 
-        if n_args == '*':
+        if n_values == '*':
             return buffer, kw_is_optional, -1
 
-        if not n_args.isdigit():
-            raise fy.FreyaSyntaxError(f"Invalid number of arguments specified: '{n_args}'")
+        if not n_values.isdigit():
+            raise fy.FreyaSyntaxError(f"Invalid number of arguments specified: '{n_values}'")
 
-        return buffer, kw_is_optional, int(n_args)
+        return buffer, kw_is_optional, int(n_values)
 
 
     # --------------------------------------------------------------------------
@@ -169,9 +181,9 @@ class ArgumentRule:
 
     # --------------------------------------------------------------------------
     def _get_str_n_args(self) -> str:
-        if self.n_args == -1: return "..."
-        if self.n_args <= 1: return ""
-        return f"...({self.n_args})"
+        if self.n_values == -1: return "..."
+        if self.n_values <= 1: return ""
+        return f"...({self.n_values})"
 
 
 # //////////////////////////////////////////////////////////////////////////////

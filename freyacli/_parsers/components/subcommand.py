@@ -57,6 +57,7 @@ class Subcommand:
 
     # --------------------------------------------------------------------------
     def get_args_with_flag(self, flag: str, short_name: bool) -> list[fy.ArgumentRule]:
+        """List of rules returned is ensured to contain between 0 and 1 elements."""
         matches = list(filter(
             lambda rule: flag == rule.flag_short if short_name else flag == rule.flag_long,
             self.rules_flags
