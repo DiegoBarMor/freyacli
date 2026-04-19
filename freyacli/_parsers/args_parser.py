@@ -44,9 +44,35 @@ class ArgsParser:
 
     # --------------------------------------------------------------------------
     def _parse_argument(self, arg: str):
-        # [TODO]
-        print("LEAF", arg)
-        self._help_and_exit(1)
+        ###### POSITIONAL ARGUMENTS
+        if not arg.startswith('-'):
+            self._help_and_exit(1, "TODO: posits") # [TODO]
+            return
+
+        ###### FLAGS (LONG NAME)
+        if arg.startswith("--"):
+            ### [NOTE] --help/-h is currently a reserved flag. [TODO] allow customization
+            if "help" in arg: self._help_and_exit(0)
+            self._parse_flag(arg, arg[2:], is_short_name = False)
+            self._help_and_exit(1, "TODO: flags long") # [TODO]
+            return
+
+        ###### FLAGS (SHORT NAME)
+        if 'h' in arg: self._help_and_exit(0)
+        for flag in arg[1:]: # allow concatenation of short flags (e.g. -abc == -a -b -c)
+            self._parse_flag(arg, flag, is_short_name = True)
+
+            # [TODO] what happens with flags that take an argument? probably only the last short flag is allowed to take an argument, the rest should just be toggles
+
+        self._help_and_exit(1, "TODO: flags short") # [TODO]
+
+
+    # --------------------------------------------------------------------------
+    def _parse_flag(self, arg: str, flag: str, is_short_name: bool):
+        matches = self._current_node.get_args_with_flag(flag, is_short_name)
+
+        if not matches:
+            self._help_and_exit(1, f"Unrecognized flag: '{flag}' (provided as '{arg}').")
 
 
     # --------------------------------------------------------------------------

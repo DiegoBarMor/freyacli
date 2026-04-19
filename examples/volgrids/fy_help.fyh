@@ -20,8 +20,10 @@
     !fyh:_ Utilities related to more advanced SMIF usage.
     @resids_nonbp
         !fyh:_ Print the set of non-base-paired residue indices in a given RNA structure.
-        A residue is considered non-base-paired if it does not form a canonical base pair (UA, CG) with any other residue.
-        Requires rnapolis.
+            A residue is considered non-base-paired if it does not form a canonical base pair (UA, CG) with any other residue.
+            Requires rnapolis.
+        !fyh:path_in
+            File path to a molecular structure e.g. a PDB file.
     !@
 !@
 

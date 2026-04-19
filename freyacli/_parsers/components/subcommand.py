@@ -13,14 +13,17 @@ class Subcommand:
         self.rules_posit: list[fy.ArgumentRule] = []
         self.rules_flags: list[fy.ArgumentRule] = []
 
+
     # --------------------------------------------------------------------------
     def __repr__(self):
         values = ','.join('' if v is None else str(v) for v in self.children.values())
         return f"Subcommand({self.depth}:{self.name}){{{values if values else ''}}}"
 
+
     # --------------------------------------------------------------------------
     def __getitem__(self, name: str) -> "Subcommand":
         return self.get_child(name)
+
 
     # --------------------------------------------------------------------------
     def add_child(self, name: str) -> "Subcommand":
@@ -29,11 +32,13 @@ class Subcommand:
         self.children[name] = child
         return child
 
+
     # --------------------------------------------------------------------------
     def get_child(self, name: str) -> "Subcommand":
         if name not in self.children:
             raise fy.FreyaSyntaxError(f"Branch '{name}' is not defined in the CLI rules.")
         return self.children[name]
+
 
     # --------------------------------------------------------------------------
     def add_rule(self, rule: fy.ArgumentRule):
@@ -48,6 +53,18 @@ class Subcommand:
     # --------------------------------------------------------------------------
     def is_root(self) -> bool: return self.parent is None
     def is_leaf(self) -> bool: return not self.children
+
+
+    # --------------------------------------------------------------------------
+    def get_args_with_flag(self, flag: str, short_name: bool) -> list[fy.ArgumentRule]:
+        matches = list(filter(
+            lambda rule: flag == rule.flag_short if short_name else flag == rule.flag_long,
+            self.rules_flags
+        ))
+        if len(matches) > 1:
+            raise fy.FreyaSyntaxError(f"Multiple rules with the same flag: '{flag}'.")
+        return matches
+
 
     # --------------------------------------------------------------------------
     def str_help_long(self, py_name: str) -> str:
@@ -139,6 +156,7 @@ class Subcommand:
             path.append(node.name)
             node = node.parent
         return path[::-1]
+
 
     # --------------------------------------------------------------------------
     def _assert_unique_child(self, name: str):

@@ -52,6 +52,36 @@ class ArgumentRule:
 
 
     # --------------------------------------------------------------------------
+    def get_usage_str_positional(self) -> str:
+        """Usage string is only relevant for positionals. Flag arguments are summarized as [options...] in the usage string. A more detailed description of them is provided in the longer help string."""
+
+        if not self.is_positional:
+            raise fy.FreyaSyntaxError(f"Usage string can only be generated for positional arguments, but got a flag argument ('{self._raw_rule}').")
+
+        buffer = f"<{self.name}{self._get_str_n_args()}>"
+        if self.is_optional: buffer = f"[{buffer}]"
+        return fy.Color.blue(buffer)
+
+
+    # --------------------------------------------------------------------------
+    def get_help_string_description(self) -> str:
+        preffix = ""
+        if self.is_optional: preffix += "[optional] "
+        if self.flag_type.stores_data():
+            preffix += self.flag_type.name
+            if self.default_value: preffix += f" (default: {self.default_value})"
+            preffix += ". "
+
+        arg_desc = self._get_arg_description()
+        long_desc = self.help_str.wrapped_text(
+            indent = self._INDENT_LONG_DESC,
+            width = fy.WIDTH_TERMINAL - self._INDENT_LONG_DESC,
+            preffix = fy.Color.yellow(preffix)
+        )
+        return f"{arg_desc}\n{self._INDENT_LONG_DESC*' '}{long_desc}"
+
+
+    # --------------------------------------------------------------------------
     def _parse_default_value(self, buffer: str) -> tuple[str, str]:
         idx = buffer.find('=')
         if idx == -1: return buffer, ''
@@ -105,35 +135,6 @@ class ArgumentRule:
         splitted = buffer.split(char_split)
         if len(splitted) == 2: return splitted
         raise fy.FreyaSyntaxError(f"Invalid substring found inside argument rule: '{self._raw_rule}'")
-
-
-    # --------------------------------------------------------------------------
-    def get_usage_str_positional(self) -> str:
-        """Usage string is only relevant for positionals. Flag arguments are summarized as [options...] in the usage string. A more detailed description of them is provided in the longer help string."""
-
-        if not self.is_positional:
-            raise fy.FreyaSyntaxError(f"Usage string can only be generated for positional arguments, but got a flag argument ('{self._raw_rule}').")
-
-        buffer = f"<{self.name}{self._get_str_n_args()}>"
-        if self.is_optional: buffer = f"[{buffer}]"
-        return fy.Color.blue(buffer)
-
-    # --------------------------------------------------------------------------
-    def get_help_string_description(self) -> str:
-        preffix = ""
-        if self.is_optional: preffix += "[optional] "
-        if self.flag_type.stores_data():
-            preffix += self.flag_type.name
-            if self.default_value: preffix += f" (default: {self.default_value})"
-            preffix += ". "
-
-        arg_desc = self._get_arg_description()
-        long_desc = self.help_str.wrapped_text(
-            indent = self._INDENT_LONG_DESC,
-            width = fy.WIDTH_TERMINAL - self._INDENT_LONG_DESC,
-            preffix = fy.Color.yellow(preffix)
-        )
-        return f"{arg_desc}\n{self._INDENT_LONG_DESC*' '}{long_desc}"
 
 
     # --------------------------------------------------------------------------
