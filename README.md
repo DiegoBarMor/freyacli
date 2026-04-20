@@ -20,3 +20,4 @@ Below is an explanation of the argument **rules** and the **subcommand** nodes.
 - Flag --help/-h is currently reserved.
 - Positional arguments / options (flags) aren't currently supported for non-leaf **subcommand** nodes.
 - Execution of the app must currently happen at a leaf **subcommand** node.
+- Short flag names should not be a digit. Otherwise the parser will confuse it as a float value (e.g. `-3`).

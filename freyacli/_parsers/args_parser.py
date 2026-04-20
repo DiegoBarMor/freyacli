@@ -2,6 +2,13 @@ import freyacli as fy
 
 _RULE_NONE = fy.ArgumentRule(None)
 
+# ------------------------------------------------------------------------------
+def _can_be_float(s: str) -> bool:
+    """Allow negative arguments to be parsed as values, instead of mistaken as flags."""
+    try: float(s)
+    except ValueError: return False
+    return True
+
 # //////////////////////////////////////////////////////////////////////////////
 class ArgsParser:
     def __init__(self, fy_parser: fy.FreyaParser, app_name: str, version: str):
@@ -123,7 +130,7 @@ class ArgsParser:
             return
 
         ###### POSITIONAL ARGUMENTS
-        if not arg.startswith('-'):
+        if not arg.startswith('-') or _can_be_float(arg):
             self._parse_arg_positional(arg)
             return
 
@@ -161,7 +168,7 @@ class ArgsParser:
 
     # --------------------------------------------------------------------------
     def _parse_arg_flag_value(self, arg: str):
-        if arg.startswith('-'):
+        if arg.startswith('-') and not _can_be_float(arg):
             self._assert_default_prev_flag(arg, arg)
             is_short_name = not arg.startswith('--')
             flag = arg[1:] if is_short_name else arg[2:]
