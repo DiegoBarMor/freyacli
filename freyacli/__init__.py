@@ -5,6 +5,7 @@ from ._misc.help_str import HelpStr
 from ._utils.color import Color
 from ._utils.path_assertion import PathAssertion
 
+from ._arguments.arg_count import ArgCount
 from ._arguments.arg_dtype import ArgDType
 from ._arguments.argument_rule import ArgumentRule
 from ._arguments.subcommand import Subcommand

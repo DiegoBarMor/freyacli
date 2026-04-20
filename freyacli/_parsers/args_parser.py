@@ -72,7 +72,6 @@ class ArgsParser:
     def _parse_args(self, args: list[str]) -> None:
         self._current_node = self._fy_parser.tree
 
-
         while args:
             arg = args.pop(0)
             self._parse_subcommand(arg)
@@ -83,7 +82,7 @@ class ArgsParser:
         for arg in args:
             self._parse_argument(arg)
 
-        if self._processing_flag_val and not self._current_rule.kw_is_optional:
+        if self._processing_flag_val and not self._current_rule.arg_count.val_optional:
             self.help_and_exit(1, f"Expected a value for the last flag '--{self._current_rule.flag_long}'.")
 
         if not self._current_node.is_leaf(): # [NOTE] execution of the app must currently happen at a leaf node
@@ -127,7 +126,6 @@ class ArgsParser:
         if not arg.startswith('-'):
             self._parse_arg_positional(arg)
             return
-
 
         ###### FLAGS (LONG NAME)
         if arg.startswith("--"):
@@ -192,14 +190,15 @@ class ArgsParser:
     def _assert_default_prev_flag(self, arg: str, flag: str):
         """
         situation: a new flag is used before providing a value for the previous flag
-        this is usually incorrect, unless the previous flag is a toggle
-        (in which case this method shouldn't be reached). Alternativelt, if the
-        previous flag has a default value, that value will be set instead
+        this is incorrect if the previous flag isn't a toggle (i.e. expects a value)
+        and doesn't have a default value.
         """
-        if not self._current_rule.default_value:
-            self.help_and_exit(1, f"Expected a value for the previous flag '--{self._current_rule.flag_long}', before using '{flag}' (provided as '{arg}').")
+        rule = self._current_rule
+        if rule.arg_count.has_enough_values(rule._n_user_values): return
+        if not rule.default_value:
+            self.help_and_exit(1, f"Expected a value for the previous flag '--{rule.flag_long}', before using '{flag}' (provided as '{arg}').")
 
-        self._current_rule.register_user_value(self._current_rule.default_value)
+        rule.register_user_value(rule.default_value)
         self._processing_flag_val = False
         self._set_current_rule(_RULE_NONE)
 
