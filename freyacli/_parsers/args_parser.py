@@ -31,8 +31,13 @@ class ArgsParser:
 
 
     # --------------------------------------------------------------------------
-    def get_arg_keys(self) -> list[str]:
+    def arg_keys(self) -> list[str]:
         return list(self._user_values.keys())
+
+
+    # --------------------------------------------------------------------------
+    def arg_values(self) -> list:
+        return list(self._user_values.values())
 
 
     # --------------------------------------------------------------------------
@@ -40,6 +45,13 @@ class ArgsParser:
         if key not in self._user_values:
             raise KeyError(f"Key '{key}' not found in the stored argument values.")
         return self._user_values[key]
+
+
+    # --------------------------------------------------------------------------
+    def set_arg_value(self, key: str, value):
+        if key not in self._user_values:
+            raise KeyError(f"Key '{key}' not found in the stored argument values.")
+        self._user_values[key] = value
 
 
     # --------------------------------------------------------------------------

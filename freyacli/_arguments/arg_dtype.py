@@ -59,15 +59,24 @@ class ArgDType(Enum):
 
 
     # --------------------------------------------------------------------------
-    def assert_type(self, value, py_type: type):
+    def assert_type(self, value, py_type: type, list_expected: bool = False):
         def _raise_error(): raise fy.FreyaSyntaxError(
             f"Argument value is expected to be of type {py_type}, but got {type(value)}."
         )
-        if isinstance(value, list):
+
+        if list_expected:
+            if not isinstance(value, list): raise fy.FreyaSyntaxError(
+                f"Argument value is expected to be a list of {py_type}, but got {type(value)}."
+            )
             if not value: return value
             ### user value lists parsed by freya have consistent dataype inside.
             ### checking the first is enough
             if not isinstance(value[0], py_type): _raise_error()
+            return value
+
+        if isinstance(value, list): raise fy.FreyaSyntaxError(
+            f"Argument value is expected to be of type {py_type}, but got a list of instead."
+        )
         if not isinstance(value, py_type): _raise_error()
 
         return value

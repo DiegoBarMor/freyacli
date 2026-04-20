@@ -206,6 +206,9 @@ class ArgumentRule:
 
 
         if self.kw_is_optional: buffer = f"[{buffer}]"
+        elif not self.arg_dtype.stores_data(): buffer = ""
+
+        if buffer: buffer = f" {buffer}"
 
         if self.is_optional:
             str_flags_0 = "["
@@ -221,7 +224,7 @@ class ArgumentRule:
             f"{flag_short}, {flag_long}" if self.flag_long else flag_short
         ) if self.flag_short else flag_long
 
-        buffer = f"    {fy.Color.green(str_flags_0)} {fy.Color.blue(buffer)}"
+        buffer = f"    {fy.Color.green(str_flags_0)}{fy.Color.blue(buffer)}"
         if str_flags_1: buffer += fy.Color.green(str_flags_1)
         return buffer
 
