@@ -45,40 +45,6 @@ class App(ABC):
 
 
     # --------------------------------------------------------------------------
-    def get_arg_bool(self, key: str) -> bool:
-        return fy.ArgDType.assert_type( self.get_arg_value(key), bool )
-
-    def get_arg_str(self, key: str) -> str:
-        return fy.ArgDType.assert_type( self.get_arg_value(key), str )
-
-    def get_arg_path(self, key: str) -> Path:
-        return fy.ArgDType.assert_type( self.get_arg_value(key), Path )
-
-    def get_arg_int(self, key: str) -> int:
-        return fy.ArgDType.assert_type( self.get_arg_value(key), int )
-
-    def get_arg_float(self, key: str) -> float:
-        return fy.ArgDType.assert_type( self.get_arg_value(key), float )
-
-
-    # --------------------------------------------------------------------------
-    def get_arg_list_bool(self, key: str) -> list[bool]:
-        return fy.ArgDType.assert_type( self.get_arg_value(key), bool, list_expected = True )
-
-    def get_arg_list_str(self, key: str) -> list[str]:
-        return fy.ArgDType.assert_type( self.get_arg_value(key), str, list_expected = True )
-
-    def get_arg_list_path(self, key: str) -> list[Path]:
-        return fy.ArgDType.assert_type( self.get_arg_value(key), Path, list_expected = True )
-
-    def get_arg_list_int(self, key: str) -> list[int]:
-        return fy.ArgDType.assert_type( self.get_arg_value(key), int, list_expected = True )
-
-    def get_arg_list_float(self, key: str) -> list[float]:
-        return fy.ArgDType.assert_type( self.get_arg_value(key), float, list_expected = True )
-
-
-    # --------------------------------------------------------------------------
     def set_arg_value(self, key: str, value):
         self.args.set_arg_value(key, value)
 
@@ -115,6 +81,75 @@ class App(ABC):
         if not errors: return
 
         self.help_and_exit(1, *errors)
+
+
+    # --------------------------------------------------------------------------
+    def get_arg_bool(self, key: str) -> bool:
+        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). Flags with no value attached always store a boolean value."""
+        return self.get_arg_value(key)
+
+
+    # --------------------------------------------------------------------------
+    def get_arg_str(self, key: str) -> str:
+        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). When an optional positional value is absent, the actual stored value will be `None`.
+        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
+        return self.get_arg_value(key)
+
+
+    # --------------------------------------------------------------------------
+    def get_arg_path(self, key: str) -> Path:
+        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). When an optional positional value is absent, the actual stored value will be `None`.
+        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
+        return self.get_arg_value(key)
+
+
+    # --------------------------------------------------------------------------
+    def get_arg_int(self, key: str) -> int:
+        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). When an optional positional value is absent, the actual stored value will be `None`.
+        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
+        return self.get_arg_value(key)
+
+
+    # --------------------------------------------------------------------------
+    def get_arg_float(self, key: str) -> float:
+        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). When an optional positional value is absent, the actual stored value will be `None`.
+        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
+        return self.get_arg_value(key)
+
+
+    # --------------------------------------------------------------------------
+    def get_arg_list_bool(self, key: str) -> list[bool]:
+        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). When an optional positional value is absent, the actual stored value will be `None`.
+        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
+        return self.get_arg_value(key)
+
+
+    # --------------------------------------------------------------------------
+    def get_arg_list_str(self, key: str) -> list[str]:
+        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). When an optional positional value is absent, the actual stored value will be `None`.
+        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
+        return self.get_arg_value(key)
+
+
+    # --------------------------------------------------------------------------
+    def get_arg_list_path(self, key: str) -> list[Path]:
+        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). When an optional positional value is absent, the actual stored value will be `None`.
+        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
+        return self.get_arg_value(key)
+
+
+    # --------------------------------------------------------------------------
+    def get_arg_list_int(self, key: str) -> list[int]:
+        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). When an optional positional value is absent, the actual stored value will be `None`.
+        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
+        return self.get_arg_value(key)
+
+
+    # --------------------------------------------------------------------------
+    def get_arg_list_float(self, key: str) -> list[float]:
+        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). When an optional positional value is absent, the actual stored value will be `None`.
+        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
+        return self.get_arg_value(key)
 
 
 # //////////////////////////////////////////////////////////////////////////////

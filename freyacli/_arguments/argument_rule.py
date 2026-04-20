@@ -103,8 +103,9 @@ class ArgumentRule:
         ]
 
         if not parsed_values:
-            if self._was_used: return True
-            return
+            if self._was_used: return True # used flag has value of "True"
+            if not self.is_positional: return False # unused flag has value of "False"
+            return None # unused optional positional argument has value of "None"
 
         if self.n_values == 1: return parsed_values[0]
         return parsed_values
