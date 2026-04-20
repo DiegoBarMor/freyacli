@@ -29,6 +29,10 @@
 
 @apbs
     !fyh:_ Generate raw APBS potential grids for biomolecular structures.
+    !fyh:path_in Path of a molecular structure supported by pdb2pqr and APBS.
+    !fyh:conv2mrc whether to store the output in MRC format (instead of APBS default DX format).
+    !fyh:keep_pqr whether to keep the intermediary PQR molecular structure file.
+    !fyh:verbose whether to display all the outputs produced by APBS.
 !@
 
 @vgtools
@@ -89,7 +93,7 @@
 
 
 !def _smif_mode
-    !fyh:path_pdb
+    !fyh:path_in
         File path to a molecular structure e.g. a PDB file.
     !fyh:folder_out
         Folder path where the output SMIFs should be stored.

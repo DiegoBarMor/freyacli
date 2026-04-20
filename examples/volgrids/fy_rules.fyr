@@ -13,11 +13,10 @@
 !@
 
 @apbs
-    # path_pdb[]1.PATH
-    # ~conv2mrc[,mrc]
-    # ~keep_pqr[,pqr]
-    # ~verbose[,verbose]
-    ### leaving the bracket empty just keeps all arguments as "unparsed"
+    path_in[]1.PATH
+    ~conv2mrc[m,mrc]
+    ~keep_pqr[p,pqr]
+    ~verbose[v,verbose]
 !@
 
 @vgtools
@@ -62,8 +61,8 @@
 ### macros can be placed anywhere, even at the end
 ### just dont place macro definitions inside other macro definitions
 !def _smif_mode
-    path_pdb[]1.PATH
-    ~folder_out[o,out]1.PATH=.
+    path_in[]1.PATH
+    ~folder_out[o,out]1.PATH
     ~path_traj[t,traj]1.PATH
     ~path_apbs[a,apbs]1.PATH
     ~path_chem[b,table]1.PATH

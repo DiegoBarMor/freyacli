@@ -3,6 +3,7 @@ from ._misc.arg_dtype_error import ArgDTypeError
 from ._misc.help_str import HelpStr
 
 from ._utils.color import Color
+from ._utils.path_assertion import PathAssertion
 
 from ._arguments.arg_dtype import ArgDType
 from ._arguments.argument_rule import ArgumentRule
