@@ -59,28 +59,32 @@ class App(ABC):
         keys_file_in:  list[str] = None,
         keys_file_out: list[str] = None,
         keys_dir_out:  list[str] = None,
+        allow_none: bool = False
     ) -> None:
         known_keys = set(self.arg_keys())
 
-        def assertion(keys: list[str], assertion_func: callable) -> list[fy.ArgDTypeError]:
-            if keys is None: return []
-            vals = (
-                self.get_arg_value(key) for key in keys
-                if key in known_keys
-            )
-            return list(filter(
-                lambda v: isinstance(v, fy.ArgDTypeError),
-                map(assertion_func, vals)
-            ))
+        def assertion(keys: list[str], assertion_func: callable):
+            if keys is None: return
+            for key in keys:
+                if key not in known_keys: continue
+                val = self.get_arg_value(key)
+                if isinstance(val, list):
+                    yield from filter(
+                        lambda v: isinstance(v, fy.ArgDTypeError),
+                        (assertion_func(val, allow_none) for v in val)
+                    )
+                    continue
+                err = assertion_func(val, allow_none)
+                if isinstance(err, fy.ArgDTypeError):
+                    yield err
 
-        errors = [ err.err_message for err in \
-            assertion(keys_file_in, fy.PathAssertion.file_in) + \
-            assertion(keys_file_out, fy.PathAssertion.file_out) + \
-            assertion(keys_dir_out, fy.PathAssertion.dir_out)
-        ]
+
+        errors = list(assertion(keys_file_in, fy.PathAssertion.file_in)) +\
+            list(assertion(keys_file_out, fy.PathAssertion.file_out)) + \
+            list(assertion(keys_dir_out, fy.PathAssertion.dir_out))
         if not errors: return
 
-        self.help_and_exit(1, *errors)
+        self.help_and_exit(1, *(err.err_message for err in errors))
 
 
     # --------------------------------------------------------------------------

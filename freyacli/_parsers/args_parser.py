@@ -154,7 +154,7 @@ class ArgsParser:
         self._processing_flag_val = self._current_rule.arg_dtype.stores_data()
 
         if not self._processing_flag_val:
-            self._current_rule.register_user_value("True") # string content doesn't matter, as long as it's not an empty string
+            self._current_rule.touch()
             self._set_current_rule(_RULE_NONE)
             return
 

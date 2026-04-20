@@ -52,9 +52,9 @@
     !@
     @rotate
         !use:_io_simple
-        ~x[x,yz]1.FLOAT
-        ~y[y,xz]1.FLOAT
-        ~z[z,xy]1.FLOAT
+        ~x[x,yz]1.FLOAT=0.0
+        ~y[y,xz]1.FLOAT=0.0
+        ~z[z,xy]1.FLOAT=0.0
     !@
 !@
 

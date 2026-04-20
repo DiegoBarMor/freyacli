@@ -7,11 +7,13 @@ import freyacli as fy
 class PathAssertion:
     # --------------------------------------------------------------------------
     @staticmethod
-    def file_in(path_file: Path) -> Path | fy.ArgDTypeError:
+    def file_in(path_file: Path | None, allow_none: bool = False) -> Path | None | fy.ArgDTypeError:
         """
         Returns an error message wrapped inside an `fy.ArgDTypeError` instance if the assertion fails.
         Returrns the same input `Path` object if it passes.
+        If path is `None` and `allow_none` is `True`, it returns `None`.
         """
+        if allow_none and path_file is None: return None
         if not isinstance(path_file, Path): path_file = Path(path_file)
 
         if not path_file.exists():
@@ -23,11 +25,13 @@ class PathAssertion:
 
     # --------------------------------------------------------------------------
     @staticmethod
-    def file_out(path_file: Path) -> Path | fy.ArgDTypeError:
+    def file_out(path_file: Path | None, allow_none: bool = False) -> Path | None | fy.ArgDTypeError:
         """
         Returns an error message wrapped inside an `fy.ArgDTypeError` instance if the assertion fails.
         Returrns the same input `Path` object if it passes.
+        If path is `None` and `allow_none` is `True`, it returns `None`.
         """
+        if allow_none and path_file is None: return None
         if not isinstance(path_file, Path): path_file = Path(path_file)
 
         if path_file.is_dir():
@@ -38,11 +42,13 @@ class PathAssertion:
 
     # --------------------------------------------------------------------------
     @staticmethod
-    def dir_out(path_dir: Path) -> Path | fy.ArgDTypeError:
+    def dir_out(path_dir: Path | None, allow_none: bool = False) -> Path | None | fy.ArgDTypeError:
         """
         Returns an error message wrapped inside an `fy.ArgDTypeError` instance if the assertion fails.
         Returrns the same input `Path` object if it passes.
+        If path is `None` and `allow_none` is `True`, it returns `None`.
         """
+        if allow_none and path_dir is None: return None
         if not isinstance(path_dir, Path): path_dir = Path(path_dir)
 
         if path_dir.is_file():

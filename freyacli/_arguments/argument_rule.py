@@ -76,7 +76,7 @@ class ArgumentRule:
         When the argument accepts only 1 value, the value is returned directly instead of a `list`.
         A boolean is returned for flags of `TOGGLE` type. Alternatively, `True` can be returned when a flag is passed but its optional keyword argument isn't.
         An `ArgDTypeError` instance is returned when parsing fails due to invalid user input.
-        `None` is returned for non-used optional arguments.
+        `None` is returned for non-used optional arguments, be it positional or non-toggle flags (i.e. those that should receive values).
         """
         if self._was_used and not self.arg_count.has_enough_values(self._n_user_values):
             s = 's' if self.arg_count.min_nvalues > 1 else ''
@@ -95,8 +95,9 @@ class ArgumentRule:
 
         if not parsed_values:
             if self._was_used: return True # used flag has value of "True"
-            if not self.is_positional: return False # unused flag has value of "False"
-            return None # unused optional positional argument has value of "None"
+            if self.is_positional: return None # unused optional positional argument has value of "None"
+            if self.arg_dtype is fy.ArgDType.TOGGLE: return False # unused toggle flag has value of "False"
+            return None # unused optional flag with arguments has value of "None"
 
         if self.arg_count.min_nvalues == 1: return parsed_values[0]
         return parsed_values
