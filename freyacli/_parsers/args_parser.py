@@ -63,12 +63,14 @@ class ArgsParser:
 
     # --------------------------------------------------------------------------
     def help_and_exit(self, exit_code: int, *err_messages: str):
-        err_messages = list(err_messages)
+        err_messages: list = list(err_messages)
         for i,err in enumerate(err_messages):
-            err_messages[i] = fy.Color.red(err, bright = False)
+            err_messages[i] = fy.Color.red("ERROR: ", bright = False) + fy.Color.red(err)
+
+        if err_messages: err_messages.append("")
 
         print('\n'.join((
-            f"{self._app_name} ({fy.Color.red('v'+self._version)}). Usage:",
+            f"{self._app_name} ({fy.Color.yellow('v'+self._version)}). Usage:",
             self._current_node.str_help_long(self.py_name),
             *err_messages,
         )))
@@ -89,7 +91,7 @@ class ArgsParser:
         for arg in args:
             self._parse_argument(arg)
 
-        if self._processing_flag_val and not self._current_rule.arg_count.val_optional:
+        if not self._current_rule.has_enough_values():
             self.help_and_exit(1, f"Expected a value for the last flag '--{self._current_rule.flag_long}'.")
 
         if not self._current_node.is_leaf(): # [NOTE] execution of the app must currently happen at a leaf node
@@ -117,6 +119,10 @@ class ArgsParser:
 
     # --------------------------------------------------------------------------
     def _parse_subcommand(self, next_subcommand: str):
+        if next_subcommand in ("-h", "--help"):
+            ### [NOTE] --help/-h is currently a reserved flag. [TODO] allow customization
+            self.help_and_exit(0)
+
         if next_subcommand not in self._current_node.children:
             self.help_and_exit(1, f"Unrecognized command: '{next_subcommand}'.")
 
@@ -201,7 +207,7 @@ class ArgsParser:
         and doesn't have a default value.
         """
         rule = self._current_rule
-        if rule.arg_count.has_enough_values(rule._n_user_values): return
+        if rule.has_enough_values(): return
         if not rule.default_value:
             self.help_and_exit(1, f"Expected a value for the previous flag '--{rule.flag_long}', before using '{flag}' (provided as '{arg}').")
 

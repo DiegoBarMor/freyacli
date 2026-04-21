@@ -101,6 +101,11 @@ class ArgCount:
 
 
     # --------------------------------------------------------------------------
+    def needs_single_value(self) -> bool:
+        return (self.min_nvalues == 1) and (not self.val_optional) and (not self.unlimited)
+
+
+    # --------------------------------------------------------------------------
     def is_full(self, nvalues: int) -> bool:
         """Returns `True` for an argument that shouldn't take more values."""
         if self.unlimited: return False

@@ -78,7 +78,7 @@ class ArgumentRule:
         An `ArgDTypeError` instance is returned when parsing fails due to invalid user input.
         `None` is returned for non-used optional arguments, be it positional or non-toggle flags (i.e. those that should receive values).
         """
-        if self._was_used and not self.arg_count.has_enough_values(self._n_user_values):
+        if self._was_used and not self.has_enough_values():
             s = 's' if self.arg_count.min_nvalues > 1 else ''
             return fy.ArgDTypeError(f"Expected {self.arg_count.min_nvalues} value{s} for argument '{self.name}', but got {len(self._raw_user_values)}.")
 
@@ -99,7 +99,7 @@ class ArgumentRule:
             if self.arg_dtype is fy.ArgDType.TOGGLE: return False # unused toggle flag has value of "False"
             return None # unused optional flag with arguments has value of "None"
 
-        if self.arg_count.min_nvalues == 1: return parsed_values[0]
+        if self.arg_count.needs_single_value(): return parsed_values[0]
         return parsed_values
 
 
@@ -133,6 +133,10 @@ class ArgumentRule:
             preffix = fy.Color.yellow(preffix)
         )
         return f"{arg_desc}\n{self._INDENT_LONG_DESC*' '}{long_desc}"
+
+    # --------------------------------------------------------------------------
+    def has_enough_values(self) -> bool:
+        return self.arg_count.has_enough_values(self._n_user_values)
 
 
     # --------------------------------------------------------------------------
