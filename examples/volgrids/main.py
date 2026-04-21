@@ -12,9 +12,8 @@ class App(fy.App):
 
     # --------------------------------------------------------------------------
     def run(self):
-        self.assert_paths(
-            keys_file_in = ["path_in", "paths_in"]
-        )
+        if "path_in" in self.arg_keys():
+            self.assert_file_in(self.get_arg_value("path_in"))
 
         print("A: Do something with the path of subcommands:")
         print(f"\t{self.get_path_to_root()}")

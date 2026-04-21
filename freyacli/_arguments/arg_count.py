@@ -102,7 +102,7 @@ class ArgCount:
 
     # --------------------------------------------------------------------------
     def needs_single_value(self) -> bool:
-        return (self.min_nvalues == 1) and (not self.val_optional) and (not self.unlimited)
+        return (self.min_nvalues <= 1) and (not self.unlimited)
 
 
     # --------------------------------------------------------------------------
