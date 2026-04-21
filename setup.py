@@ -7,8 +7,8 @@ exec(Path("freyacli/_version.py").read_text())
 setup(
     name="freyacli",
     version=__version__,
-    description="A CLI framework for Python",
-    keywords="cli terminal user interface",
+    description="Python CLI framework with well defined argument rules and automatic help string generation.",
+    keywords="cli terminal user interface command line interface argument parsing help string",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     author="DiegoBarMor",

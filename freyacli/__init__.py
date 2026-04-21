@@ -16,3 +16,4 @@ from ._parsers.args_parser import ArgsParser
 from ._core.app import App
 
 WIDTH_TERMINAL: int = 1 # automatically set to the current terminal width when App is initialized
+VALID_TERMINAL: bool = True # set to False when the terminal is not valid (e.g. when running in an environment without a terminal)

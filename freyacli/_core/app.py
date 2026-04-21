@@ -11,8 +11,14 @@ class App(ABC):
 
     # --------------------------------------------------------------------------
     def __init__(self, args: list[str], path_fyr: str|Path, path_fyh: str|Path):
-        fy.WIDTH_TERMINAL, _ = os.get_terminal_size()
-        if not fy.WIDTH_TERMINAL: fy.WIDTH_TERMINAL = 1
+        try:
+            fy.WIDTH_TERMINAL, _ = os.get_terminal_size()
+            if not fy.WIDTH_TERMINAL: fy.WIDTH_TERMINAL = 1
+        except OSError:
+            ### [NOTE] this can happen when e.g. using > in a shell
+            #### In that case just use a default width value.
+            fy.WIDTH_TERMINAL = 80
+            fy.VALID_TERMINAL = False
 
         fy_parser = fy.FreyaParser.from_files(path_fyr, path_fyh)
         self.args = fy.ArgsParser(fy_parser, self._APP_NAME, self._VERSION)
