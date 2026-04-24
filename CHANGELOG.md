@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.0] - 2026-04-24
+- `freyacli` package now contains an integrated freyacli application.
+    - If the package is installed, the application will be accessible with the command `freyacli`.
+    - It will provide utilities relevant when dealing with freyacli apps.
+
+
 ## [0.2.0] - 2026-04-22
 - Fixed several bugs.
 - Improved the public interface for the `App` class.

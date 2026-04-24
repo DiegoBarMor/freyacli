@@ -24,6 +24,18 @@ class FreyaParser:
 
 
     # --------------------------------------------------------------------------
+    def summarize_usage(self, app_name: str) -> None:
+        queue = [self.tree]
+        while queue:
+            node = queue.pop(0)
+            queue.extend(node.children.values())
+            if not node.is_leaf(): continue
+
+            commands = ' '.join([app_name] + node.get_path_to_root())
+            print(f"- `{commands}`: {node.help_str}")
+
+
+    # --------------------------------------------------------------------------
     def _tree_build_rules(self, rules: str):
         node: fy.Subcommand = self.tree
         for token in rules.split():

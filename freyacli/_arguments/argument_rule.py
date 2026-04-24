@@ -132,7 +132,7 @@ class ArgumentRule:
             width = fy.WIDTH_TERMINAL - self._INDENT_LONG_DESC,
             preffix = fy.Color.yellow(preffix)
         )
-        return f"{arg_desc}\n{self._INDENT_LONG_DESC*' '}{long_desc}"
+        return f"{arg_desc}\n{self._INDENT_LONG_DESC*' '}{long_desc}\n"
 
     # --------------------------------------------------------------------------
     def has_enough_values(self) -> bool:

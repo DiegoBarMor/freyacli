@@ -35,3 +35,7 @@ for item in "${items[@]}"; do
     # shellcheck disable=SC2086
     python3 examples/volgrids/main.py $item
 done
+
+echo
+echo "========== TEST: freyacli summary =========="
+python3 freyacli summary volgrids examples/volgrids/fy_rules.fyr examples/volgrids/fy_help.fyh

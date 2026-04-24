@@ -16,7 +16,17 @@ setup(
     url="https://github.com/diegobarmor/freya-cli",
     license="MIT",
     packages=find_packages(),
+    package_data={
+        "freyacli": [
+            "_utils/utils_app.fyr", "_utils/utils_app.fyh",
+        ],
+    },
     install_requires=[],
+    entry_points={
+        "console_scripts": [
+            "freyacli=freyacli.__main__:main",
+        ],
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
