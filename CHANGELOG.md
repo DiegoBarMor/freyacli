@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3.1] - 2026-04-24
+- Fixed bug with bad recognition of negative values as argument.
+
+
 ## [0.3.0] - 2026-04-24
 - `freyacli` package now contains an integrated freyacli application.
     - If the package is installed, the application will be accessible with the command `freyacli`.
