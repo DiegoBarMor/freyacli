@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import freyacli as fy
 
 _RULE_NONE = fy.ArgumentRule(None)
@@ -30,7 +32,7 @@ class ArgsParser:
         if not args: raise fy.FreyaSyntaxError(
             "Argument list shouldn't be empty. At least the application name should be specified (e.g. sys.argv[0])."
         )
-        self.py_name = args[0]
+        self.py_name = Path(args[0]).name
         self._parse_args(args[1:])
 
 

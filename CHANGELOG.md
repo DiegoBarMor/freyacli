@@ -1,6 +1,10 @@
 # Changelog
 
-## [0.3.1] - 2026-04-24
+## [0.3.2] - 2026-04-29
+- Improved how the application name is displayed in the usage string.
+
+
+## [0.3.1] - 2026-04-26
 - Fixed bug with bad recognition of negative values as argument.
 
 
