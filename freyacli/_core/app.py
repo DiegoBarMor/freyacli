@@ -64,24 +64,48 @@ class App(ABC):
 
 
     # --------------------------------------------------------------------------
-    def assert_file_in(self, path: Path, allow_none: bool = False):
+    def assert_file_in(self, path: Path, allow_none: bool = False) -> Path:
+        """
+        Asserts that the path is a valid input file (i.e. exists and is a file).
+        Returns the path upon successful assertion.
+        """
         err = fy.PathAssertion.file_in(path, allow_none)
         if isinstance(err, fy.ArgDTypeError):
             self.help_and_exit(1, err.err_message)
+        return path
 
 
     # --------------------------------------------------------------------------
-    def assert_file_out(self, path: Path, allow_none: bool = False):
+    def assert_file_out(self, path: Path, allow_none: bool = False) -> Path:
+        """
+        Asserts that the path is a valid output file (i.e. isn't a directory if it exists).
+        Returns the path upon successful assertion.
+        """
         err = fy.PathAssertion.file_out(path, allow_none)
         if isinstance(err, fy.ArgDTypeError):
             self.help_and_exit(1, err.err_message)
+        return path
 
 
     # --------------------------------------------------------------------------
-    def assert_dir_out(self, path: Path, allow_none: bool = False):
+    def assert_dir_out(self, path: Path, allow_none: bool = False) -> Path:
+        """
+        Asserts that the path is a valid output directory (i.e. isn't a file if it exists).
+        Returns the path upon successful assertion.
+        """
         err = fy.PathAssertion.dir_out(path, allow_none)
         if isinstance(err, fy.ArgDTypeError):
             self.help_and_exit(1, err.err_message)
+        return path
+
+
+    # --------------------------------------------------------------------------
+    def assert_list_file_in(self, paths: list[Path]) -> list[Path]:
+        """
+        Asserts that the paths are valid input files (i.e. exist and are files).
+        Returns the paths upon successful assertion.
+        """
+        return [self.assert_file_in(path) for path in paths]
 
 
     # --------------------------------------------------------------------------
