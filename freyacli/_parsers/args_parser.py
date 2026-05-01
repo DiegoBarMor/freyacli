@@ -52,18 +52,13 @@ class ArgsParser:
 
 
     # --------------------------------------------------------------------------
-    def get_arg_value(self, key: str):
+    def get_arg_value(self, key: str, default = None):
         if key not in self._user_values:
             raise KeyError(f"Key '{key}' not found in the stored argument values.")
-        return self._user_values[key]
-
-
-    # --------------------------------------------------------------------------
-    def set_arg_value(self, key: str, value):
-        if key not in self._user_values:
-            raise KeyError(f"Key '{key}' not found in the stored argument values.")
-        self._user_values[key] = value
-
+        val = self._user_values[key]
+        if val is None: return default
+        if isinstance(val, list) and not val: return default
+        return val
 
     # --------------------------------------------------------------------------
     def help_and_exit(self, exit_code: int, *err_messages: str):

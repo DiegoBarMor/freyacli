@@ -1,20 +1,36 @@
 import os
+from enum import Enum, auto
 from pathlib import Path
 
 import freyacli as fy
 
 # //////////////////////////////////////////////////////////////////////////////
-class PathAssertion:
+class PathAssertion(Enum):
+    FILE_IN  = auto()
+    FILE_OUT = auto()
+    DIR_OUT  = auto()
+
     # --------------------------------------------------------------------------
-    @classmethod
-    def file_in(cls, path_file: Path | None, allow_none: bool = False) -> Path | None | fy.ArgDTypeError:
+    def __call__(self, path: Path|None, allow_none: bool = False) -> Path|None|fy.ArgDTypeError:
         """
         Returns an error message wrapped inside an `fy.ArgDTypeError` instance if the assertion fails.
         Returns the same input `Path` object if it passes.
         If path is `None` and `allow_none` is `True`, it returns `None`.
         """
-        if allow_none and path_file is None: return None
-        path_file = cls._assert_path_type(path_file)
+        if allow_none and path is None: return None
+
+        func = {
+            PathAssertion.FILE_IN:  self._assert_file_in,
+            PathAssertion.FILE_OUT: self._assert_file_out,
+            PathAssertion.DIR_OUT:  self._assert_dir_out,
+        }[self]
+        func(path)
+
+
+    # --------------------------------------------------------------------------
+    @classmethod
+    def _assert_file_in(cls, path_file: Path | None) -> Path | None | fy.ArgDTypeError:
+        path_file = cls._asserted_path_obj(path_file)
         if isinstance(path_file, fy.ArgDTypeError): return path_file
 
         if not path_file.exists():
@@ -26,14 +42,8 @@ class PathAssertion:
 
     # --------------------------------------------------------------------------
     @classmethod
-    def file_out(cls, path_file: Path | None, allow_none: bool = False) -> Path | None | fy.ArgDTypeError:
-        """
-        Returns an error message wrapped inside an `fy.ArgDTypeError` instance if the assertion fails.
-        Returns the same input `Path` object if it passes.
-        If path is `None` and `allow_none` is `True`, it returns `None`.
-        """
-        if allow_none and path_file is None: return None
-        path_file = cls._assert_path_type(path_file)
+    def _assert_file_out(cls, path_file: Path | None) -> Path | None | fy.ArgDTypeError:
+        path_file = cls._asserted_path_obj(path_file)
         if isinstance(path_file, fy.ArgDTypeError): return path_file
 
         if path_file.is_dir():
@@ -44,14 +54,8 @@ class PathAssertion:
 
     # --------------------------------------------------------------------------
     @classmethod
-    def dir_out(cls, path_dir: Path | None, allow_none: bool = False) -> Path | None | fy.ArgDTypeError:
-        """
-        Returns an error message wrapped inside an `fy.ArgDTypeError` instance if the assertion fails.
-        Returns the same input `Path` object if it passes.
-        If path is `None` and `allow_none` is `True`, it returns `None`.
-        """
-        if allow_none and path_dir is None: return None
-        path_dir = cls._assert_path_type(path_dir)
+    def _assert_dir_out(cls, path_dir: Path | None) -> Path | None | fy.ArgDTypeError:
+        path_dir = cls._asserted_path_obj(path_dir)
         if isinstance(path_dir, fy.ArgDTypeError): return path_dir
 
         if path_dir.is_file():
@@ -62,7 +66,7 @@ class PathAssertion:
 
     # --------------------------------------------------------------------------
     @staticmethod
-    def _assert_path_type(path):
+    def _asserted_path_obj(path):
         if not isinstance(path, Path):
             try: path = Path(path)
             except TypeError: return fy.ArgDTypeError(f"The specified path '{path}' is not a valid path.")

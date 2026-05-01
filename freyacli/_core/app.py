@@ -30,7 +30,6 @@ class App(ABC):
     def run(self):
         """
         Override this method to implement the logic of the app.
-        You can use the methods `get_path_to_root`, `arg_keys`, `get_arg_value` (and its), `set_arg_value`, to access the parsed arguments.
         """
         pass
 
@@ -46,137 +45,73 @@ class App(ABC):
 
 
     # --------------------------------------------------------------------------
-    def get_arg_value(self, key: str, default = None):
-        val = self.args.get_arg_value(key)
-        if val is None: return default
-        if isinstance(val, list) and not val: return default
-        return val
-
-
-    # --------------------------------------------------------------------------
-    def set_arg_value(self, key: str, value):
-        self.args.set_arg_value(key, value)
-
-
-    # --------------------------------------------------------------------------
     def help_and_exit(self, exit_code: int, *err_messages: str):
         self.args.help_and_exit(exit_code, *err_messages)
 
 
     # --------------------------------------------------------------------------
-    def assert_file_in(self, path: Path, allow_none: bool = False) -> Path:
-        """
-        Asserts that the path is a valid input file (i.e. exists and is a file).
-        Returns the path upon successful assertion.
-        """
-        err = fy.PathAssertion.file_in(path, allow_none)
-        if isinstance(err, fy.ArgDTypeError):
-            self.help_and_exit(1, err.err_message)
-        return path
-
-
-    # --------------------------------------------------------------------------
-    def assert_file_out(self, path: Path, allow_none: bool = False) -> Path:
-        """
-        Asserts that the path is a valid output file (i.e. isn't a directory if it exists).
-        Returns the path upon successful assertion.
-        """
-        err = fy.PathAssertion.file_out(path, allow_none)
-        if isinstance(err, fy.ArgDTypeError):
-            self.help_and_exit(1, err.err_message)
-        return path
-
-
-    # --------------------------------------------------------------------------
-    def assert_dir_out(self, path: Path, allow_none: bool = False) -> Path:
-        """
-        Asserts that the path is a valid output directory (i.e. isn't a file if it exists).
-        Returns the path upon successful assertion.
-        """
-        err = fy.PathAssertion.dir_out(path, allow_none)
-        if isinstance(err, fy.ArgDTypeError):
-            self.help_and_exit(1, err.err_message)
-        return path
-
-
-    # --------------------------------------------------------------------------
-    def assert_list_file_in(self, paths: list[Path]) -> list[Path]:
-        """
-        Asserts that the paths are valid input files (i.e. exist and are files).
-        Returns the paths upon successful assertion.
-        """
-        return [self.assert_file_in(path) for path in paths]
-
-
-    # --------------------------------------------------------------------------
     def get_arg_bool(self, key: str, default = None) -> bool:
         """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). Flags with no value attached always store a boolean value."""
-        return self.get_arg_value(key, default)
+        return self.args.get_arg_value(key, default)
 
 
     # --------------------------------------------------------------------------
-    def get_arg_str(self, key: str, default = None) -> str:
+    def get_arg_str(self, key: str, default = None, is_list: bool = False) -> str:
         """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). When an optional positional value is absent, the actual stored value will be `None`.
         When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
-        return self.get_arg_value(key, default)
+        val = self.args.get_arg_value(key, default)
+        if not is_list: return val
+        return self._val_as_list(val, default)
 
 
     # --------------------------------------------------------------------------
-    def get_arg_path(self, key: str, default = None) -> Path:
-        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). When an optional positional value is absent, the actual stored value will be `None`.
-        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
-        return self.get_arg_value(key, default)
+    def get_arg_path(self,
+            key: str, default = None, is_list: bool = False,
+            assertion: fy.PathAssertion | None = None, allow_none: bool = False
+        ) -> Path:
+        """
+        When an optional positional value is absent, the actual stored value will be `None`.
+        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached).
+        If `assertion` is provided, the returned path(s) will be asserted with the provided assertion function. If the assertion fails, an error message will be printed and the app will exit.
+        `allow_none` is passed to the assertion function, and it allows `None` values to pass the assertion if set to `True`.
+        """
+        val = self.args.get_arg_value(key, default)
+        if not is_list: return self._asserted_path(val, assertion, allow_none)
+        return [self._asserted_path(v, assertion, allow_none) for v in self._val_as_list(val, default)]
 
 
     # --------------------------------------------------------------------------
-    def get_arg_int(self, key: str, default = None) -> int:
+    def get_arg_int(self, key: str, default = None, is_list: bool = False) -> int:
         """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). When an optional positional value is absent, the actual stored value will be `None`.
         When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
-        return self.get_arg_value(key, default)
+        val = self.args.get_arg_value(key, default)
+        if not is_list: return val
+        return self._val_as_list(val, default)
 
 
     # --------------------------------------------------------------------------
-    def get_arg_float(self, key: str, default = None) -> float:
+    def get_arg_float(self, key: str, default = None, is_list: bool = False) -> float:
         """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). When an optional positional value is absent, the actual stored value will be `None`.
         When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
-        return self.get_arg_value(key, default)
+        val = self.args.get_arg_value(key, default)
+        if not is_list: return val
+        return self._val_as_list(val, default)
 
 
     # --------------------------------------------------------------------------
-    def get_arg_list_str(self, key: str, default = None) -> list[str]:
-        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). When an optional positional value is absent, the actual stored value will be `None`.
-        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
-        val = self.get_arg_value(key)
-        if val is None: return default
-        if isinstance(val, list): return val
-        return [val]
+    def _asserted_path(self,
+        path: Path|None, assertion: fy.PathAssertion|None, allow_none: bool
+    ) -> Path|None:
+        if assertion is None: assertion = lambda x: x
+        err = assertion(path, allow_none)
+        if isinstance(err, fy.ArgDTypeError):
+            self.help_and_exit(1, err.err_message)
+        return path
 
 
     # --------------------------------------------------------------------------
-    def get_arg_list_path(self, key: str, default = None) -> list[Path]:
-        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). When an optional positional value is absent, the actual stored value will be `None`.
-        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
-        val = self.get_arg_value(key)
-        if val is None: return default
-        if isinstance(val, list): return val
-        return [val]
-
-
-    # --------------------------------------------------------------------------
-    def get_arg_list_int(self, key: str, default = None) -> list[int]:
-        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). When an optional positional value is absent, the actual stored value will be `None`.
-        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
-        val = self.get_arg_value(key)
-        if val is None: return default
-        if isinstance(val, list): return val
-        return [val]
-
-
-    # --------------------------------------------------------------------------
-    def get_arg_list_float(self, key: str, default = None) -> list[float]:
-        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier). When an optional positional value is absent, the actual stored value will be `None`.
-        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
-        val = self.get_arg_value(key)
+    @staticmethod
+    def _val_as_list(val, default):
         if val is None: return default
         if isinstance(val, list): return val
         return [val]

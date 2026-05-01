@@ -13,7 +13,7 @@ class App(fy.App):
     # --------------------------------------------------------------------------
     def run(self):
         if "path_in" in self.arg_keys():
-            self.assert_file_in(self.get_arg_value("path_in"))
+            self.get_arg_path("path_in", assertion = fy.PathAssertion.FILE_IN)
 
         print("A: Do something with the path of subcommands:")
         print(f"\t{self.get_path_to_root()}")
@@ -26,14 +26,8 @@ class App(fy.App):
         print()
         print("C: Use the keys to do something with the stored values:")
         for key in keys:
-            value = self.get_arg_value(key)
+            value = self.args.get_arg_value(key)
             print(f"\t{key} = {value} ({type(value)})")
-
-        print()
-        print("D: Override the user stored values:")
-        if "path_chem" in keys and self.get_arg_value("path_chem") is None:
-            self.set_arg_value("path_chem", Path(__file__).parent)
-            print("Overriden 'path_chem':", self.get_arg_value("path_chem"))
 
 
 ################################################################################
