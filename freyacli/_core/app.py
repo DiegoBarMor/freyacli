@@ -102,7 +102,7 @@ class App(ABC):
     def _asserted_path(self,
         path: Path|None, assertion: fy.PathAssertion|None, allow_none: bool
     ) -> Path|None:
-        if assertion is None: assertion = lambda x: x
+        if assertion is None: return path
         err = assertion(path, allow_none)
         if isinstance(err, fy.ArgDTypeError):
             self.help_and_exit(1, err.err_message)
