@@ -24,7 +24,7 @@ class PathAssertion(Enum):
             PathAssertion.FILE_OUT: self._assert_file_out,
             PathAssertion.DIR_OUT:  self._assert_dir_out,
         }[self]
-        func(path)
+        return func(path)
 
 
     # --------------------------------------------------------------------------

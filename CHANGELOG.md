@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.2] - 2026-05-21
+- Fixed bug where path assertion wasn't returning the potential errors generated during the assertion.
+
+
+## [0.4.1] - 2026-05-05
+- Fixed bug related to the new path assertion.
+
+
+## [0.4.0] - 2026-05-01
+- Reworked the App getter and path assertion methods.
+
+
 ## [0.3.2] - 2026-04-29
 - Improved how the application name is displayed in the usage string.
 
