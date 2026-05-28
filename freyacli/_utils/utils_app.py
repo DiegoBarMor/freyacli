@@ -37,7 +37,6 @@ class FreyacliUtilsApp(fy.App):
 
         _fy_parser = fy.FreyaParser.from_files(path_fyr, path_fyh)
         _fy_parser.summarize_usage(app_name)
-        # [TODO]: format as a nice markdown table instead
 
 
 # //////////////////////////////////////////////////////////////////////////////

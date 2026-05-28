@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3] - 2026-05-28
+- Fixed bug when parsing quoted numeric argument lists.
+- Improved `freyacli summary`.
+    - Subcommands are now properly sorted according to their order of occurrence inside the FYR file.
+    - Summary is now formatted as a markdown table.
+
+
 ## [0.4.2] - 2026-05-21
 - Fixed bug where path assertion wasn't returning the potential errors generated during the assertion.
 

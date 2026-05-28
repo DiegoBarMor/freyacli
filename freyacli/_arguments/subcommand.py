@@ -13,10 +13,12 @@ class Subcommand:
         self.rules_posit: list[fy.ArgumentRule] = []
         self.rules_flags: list[fy.ArgumentRule] = []
 
+        self._children_names: list[str] = [] # children names sorted in order of definition
+
 
     # --------------------------------------------------------------------------
     def __repr__(self):
-        values = ','.join('' if v is None else str(v) for v in self.children.values())
+        values = ','.join('' if v is None else str(v) for v in self.iter_sorted_children())
         return f"Subcommand({self.depth}:{self.name}){{{values if values else ''}}}"
 
 
@@ -30,6 +32,7 @@ class Subcommand:
         self._assert_unique_child(name)
         child = Subcommand(name, self)
         self.children[name] = child
+        self._children_names.append(name)
         return child
 
 
@@ -53,6 +56,11 @@ class Subcommand:
     # --------------------------------------------------------------------------
     def is_root(self) -> bool: return self.parent is None
     def is_leaf(self) -> bool: return not self.children
+
+
+    # --------------------------------------------------------------------------
+    def iter_sorted_children(self):
+        return (self.children[name] for name in self._children_names)
 
 
     # --------------------------------------------------------------------------
@@ -107,14 +115,14 @@ class Subcommand:
 
     # --------------------------------------------------------------------------
     def _get_str_subcommands(self) -> str:
-        max_name_len = max(map(len, self.children.keys()))
+        max_name_len = max(map(len, self._children_names))
         width_name = len(fy.HelpStr.pad_name("", max_name_len))
         width_desc = max(1, fy.WIDTH_TERMINAL - width_name)
 
         rows_commands = '\n'.join((
-            fy.Color.magenta(fy.HelpStr.pad_name(name, max_name_len)) +\
+            fy.Color.magenta(fy.HelpStr.pad_name(child.name, max_name_len)) +\
                 child.help_str.wrapped_text(width_name, width_desc)
-            for name, child in self.children.items()
+            for child in self.iter_sorted_children()
         ))
 
         return '\n'.join((
