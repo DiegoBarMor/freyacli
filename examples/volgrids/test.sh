@@ -28,7 +28,10 @@ items=(
 
     "unknown_command" # err: unrecognized command
     "smiffer prot fake_path.pdb" # err: file path doesn't exist
-    "smiffer prot README.md"
+
+    "smiffer prot README.md -s   1 2 3 5.0  " # both quoted and unquoted should work
+    "smiffer prot README.md -s  '1 2 3 5.0' "
+    "smiffer prot README.md -s \"1 2 3 5.0\""
 )
 for item in "${items[@]}"; do
     echo "========== TEST: $item =========="

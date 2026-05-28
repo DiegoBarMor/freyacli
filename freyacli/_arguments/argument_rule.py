@@ -52,8 +52,16 @@ class ArgumentRule:
     # --------------------------------------------------------------------------
     def register_user_value(self, value: str) -> bool:
         """Returns `True` when the argument is "full" (i.e. won't accept any more user values)"""
-        self._raw_user_values.append(value)
-        self._n_user_values += 1
+
+        if self.arg_dtype in (fy.ArgDType.INT, fy.ArgDType.FLOAT):
+            ### for numeric types, split the raw user values, just in case they are received as a single space-separated string
+            vals = value.strip('"').strip("'").split()
+            self._raw_user_values.extend(vals)
+            self._n_user_values += len(vals)
+        else:
+            self._raw_user_values.append(value)
+            self._n_user_values += 1
+
         self.touch()
         return self.arg_count.is_full(self._n_user_values)
 
@@ -81,12 +89,6 @@ class ArgumentRule:
         if self._was_used and not self.has_enough_values():
             s = 's' if self.arg_count.min_nvalues > 1 else ''
             return fy.ArgDTypeError(f"Expected {self.arg_count.min_nvalues} value{s} for argument '{self.name}', but got {len(self._raw_user_values)}.")
-
-        if self.arg_dtype in (fy.ArgDType.INT, fy.ArgDType.FLOAT):
-            ### for numeric types, split the raw user values, just in case they are received as a single space-separated string
-            self._raw_user_values = [
-                v for lst in self._raw_user_values for v in lst.split()
-            ]
 
         parsed_values = [
             self.arg_dtype.parse_value(self.name, raw_value)
