@@ -3,11 +3,15 @@
 
 As a bonus, **Freya CLI** provides a simple utility for coloring any printed text, via the `freyacli.Color` class. The colors provided are black, white, red, green, blue, yellow, magenta, cyan; with their respective *bright* variations, for a total of 16 colors.
 
+![alternative_text](logo.png)
+
+
 ## FYR / FYH format
 - `FYR` (FreYa Rules) specifies a list of **rules** that must be followed when using an application's CLI. These rules are organized inside a hierarchy structure composed of **subcommand** nodes.
 - `FYH` (FreYa Helps) should follow the same structure as its respective `FYR`. Instead of specifying the CLI rules, it stores the application-specific help descriptions that will be displayed whenever an incorrect use of the CLI is detected. These descriptions are automatically gathered by freya when producing the **help string**.
 
 Below is an explanation of the argument **rules** and the **subcommand** nodes.
+
 
 ### Argument Rules
 Argument rules specify how the arguments should be passed to the CLI and are specified in the `FYR` format. The simplest rule has the form:
