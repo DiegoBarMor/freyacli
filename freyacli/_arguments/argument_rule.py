@@ -12,7 +12,6 @@ class ArgumentRule:
         self.help_str: fy.HelpStr = fy.HelpStr()
 
         self._raw_user_values: list[str] = [] # raw string values provided by the user
-        self._n_user_values: int = 0 # amount of values provided by the user so far
         self._was_used: bool = False # True when the flag of this argument was used at least once.
 
         self.name: str = ""               # name that will be displayed between <> (e.g. "<value>") in the help string, and used to fetch any given values
@@ -57,13 +56,13 @@ class ArgumentRule:
             ### for numeric types, split the raw user values, just in case they are received as a single space-separated string
             vals = value.strip('"').strip("'").split()
             self._raw_user_values.extend(vals)
-            self._n_user_values += len(vals)
+            self.arg_count.n_user_values += len(vals)
         else:
             self._raw_user_values.append(value)
-            self._n_user_values += 1
+            self.arg_count.n_user_values += 1
 
         self.touch()
-        return self.arg_count.is_full(self._n_user_values)
+        return self.arg_count.is_full()
 
 
     # --------------------------------------------------------------------------
@@ -138,7 +137,7 @@ class ArgumentRule:
 
     # --------------------------------------------------------------------------
     def has_enough_values(self) -> bool:
-        return self.arg_count.has_enough_values(self._n_user_values)
+        return self.arg_count.has_enough_values()
 
 
     # --------------------------------------------------------------------------

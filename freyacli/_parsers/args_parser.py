@@ -91,7 +91,11 @@ class ArgsParser:
             self._parse_argument(arg)
 
         if not self._current_rule.has_enough_values():
-            self.help_and_exit(1, f"Expected a value for the last flag '--{self._current_rule.flag_long}'.")
+            c = self._current_rule.arg_count
+            self.help_and_exit(1,
+                f"Expected at least {c.min_nvalues} value(s) for the last flag '--{self._current_rule.flag_long}'."
+                f" Got only {c.n_user_values} value(s) instead."
+            )
 
         if not self._current_node.is_leaf(): # [NOTE] execution of the app must currently happen at a leaf node
             self.help_and_exit(1)

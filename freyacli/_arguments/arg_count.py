@@ -41,6 +41,7 @@ class ArgCount:
         self.min_nvalues  = min_nvalues  # 0 for *, n otherwise
         self.val_optional = val_optional # True for n? and *, False for n and n+
         self.unlimited    = unlimited    # True for * and n+, False for n and n?
+        self.n_user_values: int = 0      # amount of values provided by the user so far
 
 
     # --------------------------------------------------------------------------
@@ -106,18 +107,18 @@ class ArgCount:
 
 
     # --------------------------------------------------------------------------
-    def is_full(self, nvalues: int) -> bool:
+    def is_full(self) -> bool:
         """Returns `True` for an argument that shouldn't take more values."""
         if self.unlimited: return False
-        return nvalues >= self.min_nvalues
+        return self.n_user_values >= self.min_nvalues
 
 
     # --------------------------------------------------------------------------
-    def has_enough_values(self, nvalues: int) -> bool:
+    def has_enough_values(self) -> bool:
         """Returns `True` for an argument that has already received enough values."""
         if self.val_optional: return True
-        if self.unlimited: return nvalues >= self.min_nvalues
-        return nvalues == self.min_nvalues
+        if self.unlimited: return self.n_user_values >= self.min_nvalues
+        return self.n_user_values == self.min_nvalues
 
 
 # //////////////////////////////////////////////////////////////////////////////
