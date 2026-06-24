@@ -6,6 +6,7 @@ import freyacli as fy
 # //////////////////////////////////////////////////////////////////////////////
 class ArgDType(Enum):
     NONE   = auto()
+    ANY    = auto()
     TOGGLE = auto()
     STR    = auto()
     PATH   = auto()
@@ -18,6 +19,7 @@ class ArgDType(Enum):
         if s is None: return cls.NONE
         s = s.lower()
         if not s:        return cls.TOGGLE
+        if s == "any":   return cls.ANY
         if s == "str":   return cls.STR
         if s == "path":  return cls.PATH
         if s == "float": return cls.FLOAT
@@ -39,7 +41,7 @@ class ArgDType(Enum):
         if self == ArgDType.TOGGLE:
             raise fy.FreyaSyntaxError(f"Argument is a flag of type TOGGLE and doesn't accept any values, but somehow got '{raw_value}'.")
 
-        if self == ArgDType.STR:
+        if self == ArgDType.ANY or self == ArgDType.STR:
             return raw_value.strip('"').strip("'")
 
         if self == ArgDType.PATH:

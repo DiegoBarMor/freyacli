@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.4] - 2026-06-24
+- Improved the help message when insufficient values are provided for a flag.
+- Added `ANY` flag type.
+    - It parses values like a `STR` type.
+    - Its purpose is to show in the help string that a flag receives values with potentially different types (e.g. either a number or a path).
+    - Its value(s) should be retrieved with `get_arg_str`.
+    - Any necessary parsing should be done afterwards.
+
+
 ## [0.4.3] - 2026-05-28
 - Fixed bug when parsing quoted numeric argument lists.
 - Improved `freyacli summary`.
