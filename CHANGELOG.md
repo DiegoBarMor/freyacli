@@ -1,4 +1,8 @@
 # Changelog
+## [0.4.5] - 2026-10-18
+- Bugfix in path assertion.
+- Bugfix in `-h` flag usage.
+
 
 ## [0.4.4] - 2026-06-24
 - Improved the help message when insufficient values are provided for a flag.

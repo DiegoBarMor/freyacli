@@ -158,6 +158,10 @@ class ArgsParser:
 
     # --------------------------------------------------------------------------
     def _parse_arg_flag_name(self, arg: str, flag: str, is_short_name: bool):
+        if flag in ("-h", "--help"):
+            ### [NOTE] --help/-h is currently a reserved flag. [TODO] allow customization
+            self.help_and_exit(0)
+
         if self._processing_flag_val:
             self._assert_default_prev_flag(arg, flag)
 
@@ -209,6 +213,10 @@ class ArgsParser:
         this is incorrect if the previous flag isn't a toggle (i.e. expects a value)
         and doesn't have a default value.
         """
+        if arg in ("-h", "--help"):
+            ### [NOTE] --help/-h is currently a reserved flag. [TODO] allow customization
+            self.help_and_exit(0)
+
         rule = self._current_rule
         if rule.has_enough_values(): return
         if not rule.default_value:
