@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 # //////////////////////////////////////////////////////////////////////////////
 @dataclass
-class ArgDTypeError:
+class WrongUserValue:
     """
     Stores information about an error when parsing user-provided argument values.
     """

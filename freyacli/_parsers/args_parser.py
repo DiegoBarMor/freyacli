@@ -103,7 +103,7 @@ class ArgsParser:
         for rule in self._current_node.rules.values():
             if rule._raw_user_values: continue
             if rule.default_value:
-                rule.register_user_value(rule.default_value)
+                rule.register_raw_user_value(rule.default_value)
                 continue
             if rule.is_optional: continue
             self.help_and_exit(1, f"Missing required argument: '{rule.name}'.")
@@ -113,7 +113,7 @@ class ArgsParser:
         }
         errors = [
             v.err_message for v in self._user_values.values()
-            if isinstance(v, fy.ArgDTypeError)
+            if isinstance(v, fy.WrongUserValue)
         ]
         if not errors: return
 
@@ -188,8 +188,8 @@ class ArgsParser:
             self._parse_arg_flag_name(arg, flag, is_short_name)
             return
 
-        flag_is_full = self._current_rule.register_user_value(arg)
-        if flag_is_full:
+        self._current_rule.register_raw_user_value(arg)
+        if self._current_rule.arg_count.is_full():
             self._set_current_rule(_RULE_NONE)
             self._processing_flag_val = False
 
@@ -201,8 +201,8 @@ class ArgsParser:
                 self.help_and_exit(1, f"Unexpected positional argument: '{arg}'.")
             self._set_current_rule(self._pending_posit.pop(0))
 
-        posit_is_full = self._current_rule.register_user_value(arg)
-        if posit_is_full:
+        self._current_rule.register_raw_user_value(arg)
+        if self._current_rule.arg_count.is_full():
             self._set_current_rule(_RULE_NONE)
 
 
@@ -222,7 +222,7 @@ class ArgsParser:
         if not rule.default_value:
             self.help_and_exit(1, f"Expected a value for the previous flag '--{rule.flag_long}', before using '{flag}' (provided as '{arg}').")
 
-        rule.register_user_value(rule.default_value)
+        rule.register_raw_user_value(rule.default_value)
         self._processing_flag_val = False
         self._set_current_rule(_RULE_NONE)
 
