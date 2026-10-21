@@ -22,10 +22,10 @@ class UserValue:
     def init_parse(cls, dtype: fy.ArgDType, raw_values: list[str], arg_name: str) -> "UserValue":
         obj = cls()
         obj.dtype = dtype
-        obj._has_data = True
 
         if dtype == fy.ArgDType.STR:
             obj._data_str = [v.strip('"').strip("'") for v in raw_values]
+            obj._has_data = bool(obj._data_str)
             return obj
 
         if dtype == fy.ArgDType.PATH:
@@ -35,6 +35,7 @@ class UserValue:
                 return fy.UserValue.init_wrong(
                     f"The specified path with type '{str(e)[idx:]}' is not a valid path."
                 )
+            obj._has_data = bool(obj._data_path)
             return obj
 
         if dtype == fy.ArgDType.INT:
@@ -44,6 +45,7 @@ class UserValue:
                 return fy.UserValue.init_wrong(
                     f"Argument '{arg_name}' expected an integer value, but got{str(e)[idx:]}"
                 )
+            obj._has_data = bool(obj._data_int)
             return obj
 
         if dtype == fy.ArgDType.FLOAT:
@@ -53,6 +55,7 @@ class UserValue:
                 return fy.UserValue.init_wrong(
                 f"Argument '{arg_name}' expected a float value, but got{str(e)[idx:]}"
             )
+            obj._has_data = bool(obj._data_float)
             return obj
 
         if dtype == fy.ArgDType.NONE:

@@ -94,7 +94,6 @@ class App(ABC):
         """
         uvs = self.args.get_user_values(key)
         uvs.assert_dtype(fy.ArgDType.PATH, key)
-        print("!!!", uvs.is_empty(), uvs.__dict__)
         if uvs.is_empty(): return default
 
         errs = assertion(uvs)
