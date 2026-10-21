@@ -12,15 +12,15 @@ class App(fy.App):
 
     # --------------------------------------------------------------------------
     def run(self):
-        if "path_in" in self.arg_keys():
-            self.get_arg_path("path_in", assertion = fy.PathAssertion.FILE_IN)
+        if "path_in" in self.get_arg_keys():
+            self.arg_path("path_in", assertion = fy.PathAssertion.FILE_IN)
 
         print("A: Do something with the path of subcommands:")
         print(f"\t{self.get_path_to_root()}")
 
         print()
         print("B: Do something with the keys of the stored values:")
-        keys = self.arg_keys()
+        keys = self.get_arg_keys()
         print(f"\t{keys}")
 
         print()

@@ -40,7 +40,7 @@ class App(ABC):
 
 
     # --------------------------------------------------------------------------
-    def arg_keys(self) -> list[str]:
+    def get_arg_keys(self) -> list[str]:
         return self.args.arg_keys()
 
 
@@ -50,7 +50,7 @@ class App(ABC):
 
 
     # --------------------------------------------------------------------------
-    def get_arg_toggle(self, key: str) -> bool:
+    def arg_toggle(self, key: str) -> bool:
         """
         When an optional flag value is absent, this will return `True`
         (since the flag was used, but no value was attached).
@@ -59,20 +59,10 @@ class App(ABC):
 
 
     # --------------------------------------------------------------------------
-    def get_arg_bool(self, key: str, default = None) -> bool:
+    def arg_str(self, key: str, default: str = None) -> str | None:
         """
-        Note: Flags with no value attached always store a boolean value.
-        (refer to `App.get_arg_toggle()`)
-        """
-        uvs = self.args.get_user_values(key)
-        if uvs.is_empty(): return default
-        return uvs.get_bool()
-
-
-    # --------------------------------------------------------------------------
-    def get_arg_str(self, key: str, default = None) -> str | None:
-        """
-        Returns `default` when an optional positional value is absent.
+        Returns `default` when an optional positional value is absent
+        (and no other default value is specified in the FYR file).
         """
         uvs = self.args.get_user_values(key)
         if uvs.is_empty(): return default
@@ -80,7 +70,7 @@ class App(ABC):
 
 
     # --------------------------------------------------------------------------
-    def get_arg_str_list(self, key: str) -> list[str]:
+    def arg_str_list(self, key: str) -> list[str]:
         """
         Returns an empty list when optional positional values are absent.
         """
@@ -88,47 +78,47 @@ class App(ABC):
 
 
     # --------------------------------------------------------------------------
-    def get_arg_path(self,
-        key: str, default = None,
+    def arg_path(self,
+        key: str, default: Path = None,
         assertion: fy.PathAssertion = fy.PathAssertion.NO_ASSERTION,
-        allow_none: bool = False
     ) -> Path | None:
         """
-        Returns `default` when an optional positional value is absent (when `allow_none` is True).
-        Asserts the validity of the paths using `assertion`.
+        Returns `default` when an optional positional value is absent
+        (and no other default value is specified in the FYR file).
+        Otherwise, asserts the validity of the paths using `assertion`.
         """
         uvs = self.args.get_user_values(key)
-        if uvs.is_empty() and allow_none: return default
+        if uvs.is_empty(): return default
 
-        errs = assertion(uvs, allow_none)
+        errs = assertion(uvs)
         if errs: self.help_and_exit(1, *(err.get_error() for err in errs))
 
         return uvs.get_paths()[0]
 
 
     # --------------------------------------------------------------------------
-    def get_arg_path_list(self,
+    def arg_path_list(self,
         key: str,
         assertion: fy.PathAssertion = fy.PathAssertion.NO_ASSERTION,
-        allow_none: bool = False
     ) -> Path | None:
         """
-        Returns `default` when an optional positional value is absent (when `allow_none` is True).
+        Returns an empty list when optional positional values are absent.
         Asserts the validity of the paths using `assertion`.
         """
         uvs = self.args.get_user_values(key)
-        if uvs.is_empty() and allow_none: return []
+        if uvs.is_empty(): return []
 
-        errs = assertion(uvs, allow_none)
+        errs = assertion(uvs)
         if errs: self.help_and_exit(1, *(err.get_error() for err in errs))
 
         return uvs.get_paths()
 
 
     # --------------------------------------------------------------------------
-    def get_arg_int(self, key: int, default = None) -> int | None:
+    def arg_int(self, key: int, default: int = None) -> int | None:
         """
-        Returns `default` when an optional positional value is absent.
+        Returns `default` when an optional positional value is absent
+        (and no other default value is specified in the FYR file).
         """
         uvs = self.args.get_user_values(key)
         if uvs.is_empty(): return default
@@ -136,7 +126,7 @@ class App(ABC):
 
 
     # --------------------------------------------------------------------------
-    def get_arg_int_list(self, key: int) -> list[int]:
+    def arg_int_list(self, key: int) -> list[int]:
         """
         Returns an empty list when optional positional values are absent.
         """
@@ -144,9 +134,10 @@ class App(ABC):
 
 
     # --------------------------------------------------------------------------
-    def get_arg_float(self, key: float, default = None) -> float | None:
+    def arg_float(self, key: float, default: float = None) -> float | None:
         """
-        Returns `default` when an optional positional value is absent.
+        Returns `default` when an optional positional value is absent
+        (and no other default value is specified in the FYR file).
         """
         uvs = self.args.get_user_values(key)
         if uvs.is_empty(): return default
@@ -154,19 +145,11 @@ class App(ABC):
 
 
     # --------------------------------------------------------------------------
-    def get_arg_float_list(self, key: float) -> list[float]:
+    def arg_float_list(self, key: float) -> list[float]:
         """
         Returns an empty list when optional positional values are absent.
         """
         return self.args.get_user_values(key).get_floats()
-
-
-    # --------------------------------------------------------------------------
-    def _assert_uvs_paths(self,
-        uvs: fy.UserValue, assertion: fy.PathAssertion, allow_none: bool
-    ) -> None:
-        errors = assertion(uvs, allow_none)
-        if any(errors): self.help_and_exit(1, *(err.err_message for err in errors))
 
 
 # //////////////////////////////////////////////////////////////////////////////

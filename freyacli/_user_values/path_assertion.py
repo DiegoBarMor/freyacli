@@ -12,17 +12,13 @@ class PathAssertion(Enum):
     NO_ASSERTION = auto()
 
     # --------------------------------------------------------------------------
-    def __call__(self, uvs: fy.UserValue, allow_empty: bool = False) -> list[fy.UserValue]:
+    def __call__(self, uvs: fy.UserValue) -> list[fy.UserValue]:
         """
         Asserts `Path` values inside a `fy.UserValue` instance.
         Returns a list of found errors, if any, wrapped inside the faulty `fy.UserValue` instances.
-        An empty `fy.UserValue` is considered an error, unless `allow_empty` is `True`.
+        An empty `fy.UserValue` isn't considered an error (though this should never happen when assertions are called in `fy.App`).
         An empty list is returned when no errors are found.
         """
-        if uvs.is_empty():
-            if allow_empty: return []
-            return [fy.UserValue.init_wrong("Expected at least one path.")]
-
         if self == self.NO_ASSERTION:      func = lambda _: None
         if self == PathAssertion.FILE_IN:  func = self._assert_file_in
         if self == PathAssertion.FILE_OUT: func = self._assert_file_out

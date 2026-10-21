@@ -98,38 +98,26 @@ class UserValue:
 
     # --------------------------------------------------------------------------
     def get_bool(self) -> bool:
-    # def get_bool(self, default: bool) -> bool:
-        # if not self._data_toggle: return default
         return self._data_toggle
 
     # --------------------------------------------------------------------------
     def get_anys(self) -> list[str]:
-    # def get_anys(self, default: str) -> list[str]:
-        # if not self._data_str: return [default]
         return self._data_str
 
     # --------------------------------------------------------------------------
     def get_strs(self) -> list[str]:
-    # def get_strs(self, default: str) -> list[str]:
-        # if not self._data_str: return [default]
         return self._data_str
 
     # --------------------------------------------------------------------------
     def get_paths(self) -> list[Path]:
-    # def get_paths(self, default: Path) -> list[Path]:
-        # if not self._data_path: return [default]
         return self._data_path
 
     # --------------------------------------------------------------------------
     def get_ints(self) -> list[int]:
-    # def get_ints(self, default: int) -> list[int]:
-        # if not self._data_int: return [default]
         return self._data_int
 
     # --------------------------------------------------------------------------
     def get_floats(self) -> list[float]:
-    # def get_floats(self, default: float) -> list[float]:
-        # if not self._data_float: return [default]
         return self._data_float
 
 
