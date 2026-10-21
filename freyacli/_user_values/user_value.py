@@ -7,52 +7,57 @@ class UserValue:
     def __init__(self):
         self._has_data: bool = False
 
-        self._data_any: str = None # even if it's referred as "Any", generic data obtained from the CLI are strings
-        self._data_toggle: bool = None
-        self._data_str: str = None
-        self._data_path: Path = None
-        self._data_int: int = None
-        self._data_float: float = None
+        self._data_toggle: bool = False # a flag is either provided or not; there's no "list of values" here
+        self._data_str:   list[str  ] = []
+        self._data_path:  list[Path ] = []
+        self._data_int:   list[int  ] = []
+        self._data_float: list[float] = []
 
         self._is_wrong: bool = False
         self._err_msg: str = "" # stores information about an error when parsing user-provided argument values.
 
     # --------------------------------------------------------------------------
     @classmethod
-    def init_parse(cls, dtype: fy.ArgDType, raw_value: str, arg_name: str) -> "UserValue":
+    def init_parse(cls, dtype: fy.ArgDType, raw_values: list[str], arg_name: str) -> "UserValue":
         obj = cls()
         obj._has_data = True
 
         if dtype == fy.ArgDType.ANY or dtype == fy.ArgDType.STR:
-            obj._data_str = raw_value.strip('"').strip("'")
+            obj._data_str = [v.strip('"').strip("'") for v in raw_values]
             return obj
 
         if dtype == fy.ArgDType.PATH:
-            try: obj._data_path = Path(raw_value)
-            except ValueError: return fy.UserValue.init_wrong(
-                f"Argument '{arg_name}' couldn't be parsed into a Python Path object.."
-            )
+            try: obj._data_path = [Path(v) for v in raw_values]
+            except TypeError as e:
+                idx = str(e).find("not")
+                return fy.UserValue.init_wrong(
+                    f"The specified path with type '{str(e)[idx:]}' is not a valid path."
+                )
             return obj
 
         if dtype == fy.ArgDType.INT:
-            try: obj._data_int = int(raw_value)
-            except ValueError: return fy.UserValue.init_wrong(
-                f"Argument '{arg_name}' expected an integer value, but got '{raw_value}'."
-            )
+            try: obj._data_int = [int(v) for v in raw_values]
+            except ValueError as e:
+                idx = str(e).find(':')
+                return fy.UserValue.init_wrong(
+                    f"Argument '{arg_name}' expected an integer value, but got{str(e)[idx:]}"
+                )
             return obj
 
         if dtype == fy.ArgDType.FLOAT:
-            try: obj._data_float = float(raw_value)
-            except ValueError: return fy.UserValue.init_wrong(
-                f"Argument '{arg_name}' expected a float value, but got '{raw_value}'."
+            try: obj._data_float = [float(v) for v in raw_values]
+            except ValueError:
+                idx = str(e).find(':')
+                return fy.UserValue.init_wrong(
+                f"Argument '{arg_name}' expected a float value, but got{str(e)[idx:]}"
             )
             return obj
 
         if dtype == fy.ArgDType.NONE:
-            raise fy.FreyaSyntaxError(f"Argument doesn't accept any values, but somehow got '{raw_value}'.")
+            raise fy.FreyaSyntaxError(f"Argument doesn't accept any values, but somehow got {raw_values}.")
 
         if dtype == fy.ArgDType.TOGGLE:
-            raise fy.FreyaSyntaxError(f"Argument is a flag of type TOGGLE and doesn't accept any values, but somehow got '{raw_value}'.")
+            raise fy.FreyaSyntaxError(f"Argument is a flag of type TOGGLE and doesn't accept any values, but somehow got {raw_values}.")
 
         raise fy.FreyaSyntaxError(f"Unkown dtype '{dtype}'.")
 
@@ -90,6 +95,42 @@ class UserValue:
     # --------------------------------------------------------------------------
     def get_error(self) -> str:
         return self._err_msg
+
+    # --------------------------------------------------------------------------
+    def get_bool(self) -> bool:
+    # def get_bool(self, default: bool) -> bool:
+        # if not self._data_toggle: return default
+        return self._data_toggle
+
+    # --------------------------------------------------------------------------
+    def get_anys(self) -> list[str]:
+    # def get_anys(self, default: str) -> list[str]:
+        # if not self._data_str: return [default]
+        return self._data_str
+
+    # --------------------------------------------------------------------------
+    def get_strs(self) -> list[str]:
+    # def get_strs(self, default: str) -> list[str]:
+        # if not self._data_str: return [default]
+        return self._data_str
+
+    # --------------------------------------------------------------------------
+    def get_paths(self) -> list[Path]:
+    # def get_paths(self, default: Path) -> list[Path]:
+        # if not self._data_path: return [default]
+        return self._data_path
+
+    # --------------------------------------------------------------------------
+    def get_ints(self) -> list[int]:
+    # def get_ints(self, default: int) -> list[int]:
+        # if not self._data_int: return [default]
+        return self._data_int
+
+    # --------------------------------------------------------------------------
+    def get_floats(self) -> list[float]:
+    # def get_floats(self, default: float) -> list[float]:
+        # if not self._data_float: return [default]
+        return self._data_float
 
 
 # //////////////////////////////////////////////////////////////////////////////

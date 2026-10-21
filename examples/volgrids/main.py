@@ -26,7 +26,7 @@ class App(fy.App):
         print()
         print("C: Use the keys to do something with the stored values:")
         for key in keys:
-            value = self.args.get_arg_value(key)
+            value = self.args.get_user_values(key)
             print(f"\t{key} = {value} ({type(value)})")
 
 

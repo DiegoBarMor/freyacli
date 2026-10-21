@@ -50,75 +50,123 @@ class App(ABC):
 
 
     # --------------------------------------------------------------------------
-    def get_arg_bool(self, key: str, default = None) -> bool:
-        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier).
-        Flags with no value attached always store a boolean value."""
-        return self.args.get_arg_value(key, default)._data_toggle # [WIP]
+    def get_arg_toggle(self, key: str) -> bool:
+        """
+        When an optional flag value is absent, this will return `True`
+        (since the flag was used, but no value was attached).
+        """
+        return self.args.get_user_values(key).get_bool()
 
 
     # --------------------------------------------------------------------------
-    def get_arg_str(self, key: str, default = None, is_list: bool = False) -> str:
-        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier).
-        When an optional positional value is absent, the actual stored value will be `None`.
-        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
-        val = self.args.get_arg_value(key, default)
-        if not is_list: return val._data_str # [WIP]
-        return [v._data_str for v in self._val_as_list(val, default)]  # [WIP]
+    def get_arg_bool(self, key: str, default = None) -> bool:
+        """
+        Note: Flags with no value attached always store a boolean value.
+        (refer to `App.get_arg_toggle()`)
+        """
+        uvs = self.args.get_user_values(key)
+        if uvs.is_empty(): return default
+        return uvs.get_bool()
+
+
+    # --------------------------------------------------------------------------
+    def get_arg_str(self, key: str, default = None) -> str | None:
+        """
+        Returns `default` when an optional positional value is absent.
+        """
+        uvs = self.args.get_user_values(key)
+        if uvs.is_empty(): return default
+        return uvs.get_strs()[0]
+
+
+    # --------------------------------------------------------------------------
+    def get_arg_str_list(self, key: str) -> list[str]:
+        """
+        Returns an empty list when optional positional values are absent.
+        """
+        return self.args.get_user_values(key).get_strs()
 
 
     # --------------------------------------------------------------------------
     def get_arg_path(self,
-            key: str, default = None, is_list: bool = False,
-            assertion: fy.PathAssertion | None = None, allow_none: bool = False
-        ) -> Path:
+        key: str, default = None,
+        assertion: fy.PathAssertion = fy.PathAssertion.NO_ASSERTION,
+        allow_none: bool = False
+    ) -> Path | None:
         """
-        When an optional positional value is absent, the actual stored value will be `None`.
-        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached).
-        If `assertion` is provided, the returned path(s) will be asserted with the provided assertion function. If the assertion fails, an error message will be printed and the app will exit.
-        `allow_none` is passed to the assertion function, and it allows `None` values to pass the assertion if set to `True`.
+        Returns `default` when an optional positional value is absent (when `allow_none` is True).
+        Asserts the validity of the paths using `assertion`.
         """
-        val = self.args.get_arg_value(key, default)
-        if not is_list: return self._asserted_path(val._data_path, assertion, allow_none) # [WIP]
-        return [self._asserted_path(v._data_path, assertion, allow_none) for v in self._val_as_list(val, default)] # [WIP]
+        uvs = self.args.get_user_values(key)
+        if uvs.is_empty() and allow_none: return default
+
+        errs = assertion(uvs, allow_none)
+        if errs: self.help_and_exit(1, *(err.get_error() for err in errs))
+
+        return uvs.get_paths()[0]
 
 
     # --------------------------------------------------------------------------
-    def get_arg_int(self, key: str, default = None, is_list: bool = False) -> int:
-        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier).
-        When an optional positional value is absent, the actual stored value will be `None`.
-        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
-        val = self.args.get_arg_value(key, default)
-        if not is_list: return val._data_int # [WIP]
-        return [v._data_int for v in self._val_as_list(val, default)]  # [WIP]
+    def get_arg_path_list(self,
+        key: str,
+        assertion: fy.PathAssertion = fy.PathAssertion.NO_ASSERTION,
+        allow_none: bool = False
+    ) -> Path | None:
+        """
+        Returns `default` when an optional positional value is absent (when `allow_none` is True).
+        Asserts the validity of the paths using `assertion`.
+        """
+        uvs = self.args.get_user_values(key)
+        if uvs.is_empty() and allow_none: return []
+
+        errs = assertion(uvs, allow_none)
+        if errs: self.help_and_exit(1, *(err.get_error() for err in errs))
+
+        return uvs.get_paths()
 
 
     # --------------------------------------------------------------------------
-    def get_arg_float(self, key: str, default = None, is_list: bool = False) -> float:
-        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier).
-        When an optional positional value is absent, the actual stored value will be `None`.
-        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
-        val = self.args.get_arg_value(key, default)
-        if not is_list: return val._data_float # [WIP]
-        return [v._data_float for v in self._val_as_list(val, default)]  # [WIP]
+    def get_arg_int(self, key: int, default = None) -> int | None:
+        """
+        Returns `default` when an optional positional value is absent.
+        """
+        uvs = self.args.get_user_values(key)
+        if uvs.is_empty(): return default
+        return uvs.get_ints()[0]
 
 
     # --------------------------------------------------------------------------
-    def _asserted_path(self,
-        path: Path|None, assertion: fy.PathAssertion|None, allow_none: bool
-    ) -> Path|None:
-        if assertion is None: return path
-        err = assertion(path, allow_none)
-        if isinstance(err, fy.UserValue) and err.is_wrong(): # [WIP]
-            self.help_and_exit(1, err.err_message)
-        return path
+    def get_arg_int_list(self, key: int) -> list[int]:
+        """
+        Returns an empty list when optional positional values are absent.
+        """
+        return self.args.get_user_values(key).get_ints()
 
 
     # --------------------------------------------------------------------------
-    @staticmethod
-    def _val_as_list(val, default):
-        if val is None:
-            return default if isinstance(default, list) else [default]
-        return val if isinstance(val, list) else [val]
+    def get_arg_float(self, key: float, default = None) -> float | None:
+        """
+        Returns `default` when an optional positional value is absent.
+        """
+        uvs = self.args.get_user_values(key)
+        if uvs.is_empty(): return default
+        return uvs.get_floats()[0]
+
+
+    # --------------------------------------------------------------------------
+    def get_arg_float_list(self, key: float) -> list[float]:
+        """
+        Returns an empty list when optional positional values are absent.
+        """
+        return self.args.get_user_values(key).get_floats()
+
+
+    # --------------------------------------------------------------------------
+    def _assert_uvs_paths(self,
+        uvs: fy.UserValue, assertion: fy.PathAssertion, allow_none: bool
+    ) -> None:
+        errors = assertion(uvs, allow_none)
+        if any(errors): self.help_and_exit(1, *(err.err_message for err in errors))
 
 
 # //////////////////////////////////////////////////////////////////////////////

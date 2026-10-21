@@ -9,68 +9,52 @@ class PathAssertion(Enum):
     FILE_IN  = auto()
     FILE_OUT = auto()
     DIR_OUT  = auto()
+    NO_ASSERTION = auto()
 
     # --------------------------------------------------------------------------
-    def __call__(self, path: Path|None, allow_none: bool = False) -> Path|None|fy.UserValue:
+    def __call__(self, uvs: fy.UserValue, allow_empty: bool = False) -> list[fy.UserValue]:
         """
-        Returns an error message wrapped inside an `fy.UserValue` instance if the assertion fails.
-        Returns the same input `Path` object if it passes.
-        If path is `None` and `allow_none` is `True`, it returns `None`.
+        Asserts `Path` values inside a `fy.UserValue` instance.
+        Returns a list of found errors, if any, wrapped inside the faulty `fy.UserValue` instances.
+        An empty `fy.UserValue` is considered an error, unless `allow_empty` is `True`.
+        An empty list is returned when no errors are found.
         """
-        if allow_none and path is None: return None
+        if uvs.is_empty():
+            if allow_empty: return []
+            return [fy.UserValue.init_wrong("Expected at least one path.")]
 
-        func = {
-            PathAssertion.FILE_IN:  self._assert_file_in,
-            PathAssertion.FILE_OUT: self._assert_file_out,
-            PathAssertion.DIR_OUT:  self._assert_dir_out,
-        }[self]
-        return func(path)
+        if self == self.NO_ASSERTION:      func = lambda _: None
+        if self == PathAssertion.FILE_IN:  func = self._assert_file_in
+        if self == PathAssertion.FILE_OUT: func = self._assert_file_out
+        if self == PathAssertion.DIR_OUT:  func = self._assert_dir_out
+        return list(filter(
+            None, (func(obj_path) for obj_path in uvs.get_paths())
+        ))
 
 
     # --------------------------------------------------------------------------
     @classmethod
-    def _assert_file_in(cls, path_file: Path | None) -> Path | None | fy.UserValue:
-        path_file = cls._asserted_path_obj(path_file)
-        if isinstance(path_file, fy.UserValue) and path_file.is_wrong(): return path_file # [WIP]
-
+    def _assert_file_in(cls, path_file: Path) -> fy.UserValue | None:
         if not path_file.exists():
             return fy.UserValue.init_wrong(f"The specified file path '{path_file}' does not exist.")
         if path_file.is_dir():
             return fy.UserValue.init_wrong(f"The specified file path '{path_file}' is a folder.")
-        return path_file
 
 
     # --------------------------------------------------------------------------
     @classmethod
-    def _assert_file_out(cls, path_file: Path | None) -> Path | None | fy.UserValue:
-        path_file = cls._asserted_path_obj(path_file)
-        if isinstance(path_file, fy.UserValue) and path_file.is_wrong(): return path_file # [WIP]
-
+    def _assert_file_out(cls, path_file: Path) -> fy.UserValue | None:
         if path_file.is_dir():
             return fy.UserValue.init_wrong(f"The specified file path '{path_file}' is a folder.")
         os.makedirs(path_file.parent, exist_ok = True)
-        return path_file
 
 
     # --------------------------------------------------------------------------
     @classmethod
-    def _assert_dir_out(cls, path_dir: Path | None) -> Path | None | fy.UserValue:
-        path_dir = cls._asserted_path_obj(path_dir)
-        if isinstance(path_dir, fy.UserValue) and path_dir.is_wrong(): return path_dir # [WIP]
-
+    def _assert_dir_out(cls, path_dir: Path) -> fy.UserValue | None:
         if path_dir.is_file():
             return fy.UserValue.init_wrong(f"The specified folder path '{path_dir}' is a file.")
         os.makedirs(path_dir, exist_ok = True)
-        return path_dir
-
-
-    # --------------------------------------------------------------------------
-    @staticmethod
-    def _asserted_path_obj(path):
-        if not isinstance(path, Path):
-            try: path = Path(path)
-            except TypeError: return fy.UserValue.init_wrong(f"The specified path '{path}' is not a valid path.")
-        return path
 
 
 # //////////////////////////////////////////////////////////////////////////////

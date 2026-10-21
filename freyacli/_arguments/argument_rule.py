@@ -75,10 +75,9 @@ class ArgumentRule:
 
 
     # --------------------------------------------------------------------------
-    def parse_user_values(self) -> fy.UserValue | list[fy.UserValue]:
+    def parse_user_values(self) -> fy.UserValue:
         """
         Parses the raw user values according to the argument type (e.g. `INT`, `STR`, etc.) and returns the parsed values encapsulated inside a `fy.UserValue` instance.
-        When the argument accepts only 1 value, the value is returned directly instead of a `list`.
         A boolean is stored for flags of `TOGGLE` type. Alternatively, `True` can be stored when a flag is passed but its optional keyword argument isn't.
         A wrong `UserValue` instance is returned when parsing fails due to invalid user input.
         Empty `UserValue` is returned for non-used optional arguments, be it positional or non-toggle flags (i.e. those that should receive values).
@@ -87,10 +86,7 @@ class ArgumentRule:
             s = 's' if self.arg_count.min_nvalues > 1 else ''
             return fy.UserValue.init_wrong(f"Expected {self.arg_count.min_nvalues} value{s} for argument '{self.name}', but got {len(self._raw_user_values)}.")
 
-        parsed_values = [
-            fy.UserValue.init_parse(self.arg_dtype, raw_value, self.name)
-            for raw_value in self._raw_user_values
-        ]
+        parsed_values = fy.UserValue.init_parse(self.arg_dtype, self._raw_user_values, self.name)
 
         if not parsed_values:
             if self._was_used: return fy.UserValue.init_toggle(True)  # used flag has value of "True"
@@ -98,7 +94,6 @@ class ArgumentRule:
             if self.arg_dtype is fy.ArgDType.TOGGLE: return fy.UserValue.init_toggle(False) # unused toggle flag has value of "False"
             return fy.UserValue.init_empty() # unused optional flag with arguments has empty user value
 
-        if self.arg_count.needs_single_value(): return parsed_values[0]
         return parsed_values
 
 

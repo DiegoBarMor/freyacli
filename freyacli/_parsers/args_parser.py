@@ -18,7 +18,7 @@ class ArgsParser:
     def __init__(self, fy_parser: fy.FreyaParser, app_name: str, version: str):
         self._app_name: str = app_name
         self._version: str = version
-        self._user_values: dict[str, fy.UserValue | list[fy.UserValue]] = {}
+        self._user_values: dict[str, fy.UserValue] = {}
 
         self._fy_parser: fy.FreyaParser = fy_parser
         self._current_node: fy.Subcommand = fy_parser.tree
@@ -47,21 +47,11 @@ class ArgsParser:
 
 
     # --------------------------------------------------------------------------
-    def arg_values(self) -> list[fy.UserValue]:
-        return list(self._user_values.values())
-
-
-    # --------------------------------------------------------------------------
-    def get_arg_value(self, key: str, default = None):
+    def get_user_values(self, key: str) -> fy.UserValue:
         if key not in self._user_values:
             raise KeyError(f"Key '{key}' not found in the stored argument values.")
-        val = self._user_values[key]
-        if isinstance(val, list):
-            if not val: return default
-            return val
+        return self._user_values[key]
 
-        if val.is_empty(): return default # [WIP]
-        return val
 
     # --------------------------------------------------------------------------
     def help_and_exit(self, exit_code: int, *err_messages: str):
