@@ -6,7 +6,6 @@ import freyacli as fy
 # //////////////////////////////////////////////////////////////////////////////
 class ArgDType(Enum):
     NONE   = auto()
-    ANY    = auto()
     TOGGLE = auto()
     STR    = auto()
     PATH   = auto()
@@ -19,7 +18,6 @@ class ArgDType(Enum):
         if s is None: return cls.NONE
         s = s.lower()
         if not s:        return cls.TOGGLE
-        if s == "any":   return cls.ANY
         if s == "str":   return cls.STR
         if s == "path":  return cls.PATH
         if s == "float": return cls.FLOAT

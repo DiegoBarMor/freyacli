@@ -5,6 +5,7 @@ import freyacli as fy
 # //////////////////////////////////////////////////////////////////////////////
 class UserValue:
     def __init__(self):
+        self.dtype: fy.ArgDType = fy.ArgDType.NONE
         self._has_data: bool = False
 
         self._data_toggle: bool = False # a flag is either provided or not; there's no "list of values" here
@@ -20,9 +21,10 @@ class UserValue:
     @classmethod
     def init_parse(cls, dtype: fy.ArgDType, raw_values: list[str], arg_name: str) -> "UserValue":
         obj = cls()
+        obj.dtype = dtype
         obj._has_data = True
 
-        if dtype == fy.ArgDType.ANY or dtype == fy.ArgDType.STR:
+        if dtype == fy.ArgDType.STR:
             obj._data_str = [v.strip('"').strip("'") for v in raw_values]
             return obj
 
@@ -54,24 +56,25 @@ class UserValue:
             return obj
 
         if dtype == fy.ArgDType.NONE:
-            raise fy.FreyaSyntaxError(f"Argument doesn't accept any values, but somehow got {raw_values}.")
+            raise fy.FreyaSyntaxError(f"Argument '{arg_name}' doesn't accept any values, but somehow got {raw_values}.")
 
         if dtype == fy.ArgDType.TOGGLE:
-            raise fy.FreyaSyntaxError(f"Argument is a flag of type TOGGLE and doesn't accept any values, but somehow got {raw_values}.")
+            if not raw_values: return obj
+            raise fy.FreyaSyntaxError(f"Argument '{arg_name}' is a flag of type TOGGLE and doesn't accept any values, but somehow got {raw_values}.")
 
-        raise fy.FreyaSyntaxError(f"Unkown dtype '{dtype}'.")
+        raise fy.FreyaSyntaxError(f"Unkown dtype '{dtype}' for argument '{arg_name}'.")
 
     # --------------------------------------------------------------------------
     @classmethod
     def init_empty(cls) -> "UserValue":
         """Same as simply instantiating via `UserValue()`. Added for consistency with other constructors."""
-        obj = cls()
-        return obj
+        return cls()
 
     # --------------------------------------------------------------------------
     @classmethod
     def init_toggle(cls, value: bool) -> "UserValue":
         obj = cls()
+        obj.dtype = fy.ArgDType.TOGGLE
         obj._has_data = True
         obj._data_toggle = value
         return obj
@@ -83,6 +86,15 @@ class UserValue:
         obj._is_wrong = True
         obj._err_msg = err_msg
         return obj
+
+    # --------------------------------------------------------------------------
+    def assert_dtype(self, dtype: fy.ArgDType, arg_name: str = "") -> None:
+        """
+        Useful to prevent developers from using the wrong getter for the user value data.
+        """
+        if self.dtype != dtype: raise fy.FreyaSyntaxError(
+            f"Attempted to retrieve {dtype.name} data from '{arg_name}' user value with dtype={self.dtype}"
+        )
 
     # --------------------------------------------------------------------------
     def is_empty(self) -> bool:

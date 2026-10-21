@@ -55,7 +55,9 @@ class App(ABC):
         When an optional flag value is absent, this will return `True`
         (since the flag was used, but no value was attached).
         """
-        return self.args.get_user_values(key).get_bool()
+        uvs = self.args.get_user_values(key)
+        uvs.assert_dtype(fy.ArgDType.TOGGLE, key)
+        return uvs.get_bool()
 
 
     # --------------------------------------------------------------------------
@@ -65,6 +67,7 @@ class App(ABC):
         (and no other default value is specified in the FYR file).
         """
         uvs = self.args.get_user_values(key)
+        uvs.assert_dtype(fy.ArgDType.STR, key)
         if uvs.is_empty(): return default
         return uvs.get_strs()[0]
 
@@ -74,7 +77,9 @@ class App(ABC):
         """
         Returns an empty list when optional positional values are absent.
         """
-        return self.args.get_user_values(key).get_strs()
+        uvs = self.args.get_user_values(key)
+        uvs.assert_dtype(fy.ArgDType.STR, key)
+        return uvs.get_strs()
 
 
     # --------------------------------------------------------------------------
@@ -88,6 +93,8 @@ class App(ABC):
         Otherwise, asserts the validity of the paths using `assertion`.
         """
         uvs = self.args.get_user_values(key)
+        uvs.assert_dtype(fy.ArgDType.PATH, key)
+        print("!!!", uvs.is_empty(), uvs.__dict__)
         if uvs.is_empty(): return default
 
         errs = assertion(uvs)
@@ -106,6 +113,7 @@ class App(ABC):
         Asserts the validity of the paths using `assertion`.
         """
         uvs = self.args.get_user_values(key)
+        uvs.assert_dtype(fy.ArgDType.PATH, key)
         if uvs.is_empty(): return []
 
         errs = assertion(uvs)
@@ -121,6 +129,7 @@ class App(ABC):
         (and no other default value is specified in the FYR file).
         """
         uvs = self.args.get_user_values(key)
+        uvs.assert_dtype(fy.ArgDType.INT, key)
         if uvs.is_empty(): return default
         return uvs.get_ints()[0]
 
@@ -130,7 +139,9 @@ class App(ABC):
         """
         Returns an empty list when optional positional values are absent.
         """
-        return self.args.get_user_values(key).get_ints()
+        uvs = self.args.get_user_values(key)
+        uvs.assert_dtype(fy.ArgDType.INT, key)
+        return uvs.get_ints()
 
 
     # --------------------------------------------------------------------------
@@ -140,6 +151,7 @@ class App(ABC):
         (and no other default value is specified in the FYR file).
         """
         uvs = self.args.get_user_values(key)
+        uvs.assert_dtype(fy.ArgDType.FLOAT, key)
         if uvs.is_empty(): return default
         return uvs.get_floats()[0]
 
@@ -149,7 +161,9 @@ class App(ABC):
         """
         Returns an empty list when optional positional values are absent.
         """
-        return self.args.get_user_values(key).get_floats()
+        uvs = self.args.get_user_values(key)
+        uvs.assert_dtype(fy.ArgDType.FLOAT, key)
+        return uvs.get_floats()
 
 
 # //////////////////////////////////////////////////////////////////////////////
