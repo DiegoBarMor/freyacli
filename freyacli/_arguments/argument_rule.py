@@ -77,19 +77,19 @@ class ArgumentRule:
 
 
     # --------------------------------------------------------------------------
-    def parse_user_values(self) -> None | fy.WrongUserValue |\
+    def parse_user_values(self) -> None | fy.UserValue |\
         bool|str|Path|int|float |\
         list[bool]|list[str]|list[Path]|list[int]|list[float]:
         """
         Parses the raw user values according to the argument type (e.g. `INT`, `STR`, etc.) and returns the parsed values in the respective types.
         When the argument accepts only 1 value, the value is returned directly instead of a `list`.
         A boolean is returned for flags of `TOGGLE` type. Alternatively, `True` can be returned when a flag is passed but its optional keyword argument isn't.
-        An `WrongUserValue` instance is returned when parsing fails due to invalid user input.
+        A wrong `UserValue` instance is returned when parsing fails due to invalid user input.
         `None` is returned for non-used optional arguments, be it positional or non-toggle flags (i.e. those that should receive values).
         """
         if self._was_used and not self.has_enough_values():
             s = 's' if self.arg_count.min_nvalues > 1 else ''
-            return fy.WrongUserValue(f"Expected {self.arg_count.min_nvalues} value{s} for argument '{self.name}', but got {len(self._raw_user_values)}.")
+            return fy.UserValue.init_wrong(f"Expected {self.arg_count.min_nvalues} value{s} for argument '{self.name}', but got {len(self._raw_user_values)}.")
 
         parsed_values = [
             self.arg_dtype.parse_value(self.name, raw_value)

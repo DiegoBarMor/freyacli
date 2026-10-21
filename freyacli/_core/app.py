@@ -108,7 +108,7 @@ class App(ABC):
     ) -> Path|None:
         if assertion is None: return path
         err = assertion(path, allow_none)
-        if isinstance(err, fy.WrongUserValue):
+        if isinstance(err, fy.UserValue) and err.is_wrong(): # [WIP]
             self.help_and_exit(1, err.err_message)
         return path
 

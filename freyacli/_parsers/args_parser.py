@@ -62,16 +62,16 @@ class ArgsParser:
 
     # --------------------------------------------------------------------------
     def help_and_exit(self, exit_code: int, *err_messages: str):
-        err_messages: list = list(err_messages)
-        for i,err in enumerate(err_messages):
-            err_messages[i] = fy.Color.red("ERROR: ", bright = False) + fy.Color.red(err)
-
-        if err_messages: err_messages.append("")
+        messages = [
+            fy.Color.red("ERROR: ", bright = False) + fy.Color.red(err)
+            for err in err_messages
+        ]
+        if messages: messages.append("")
 
         print('\n'.join((
             f"{self._app_name} ({fy.Color.yellow('v'+self._version)}). Usage:",
             self._current_node.str_help_long(self.py_name),
-            *err_messages,
+            *messages,
         )))
         exit(exit_code)
 
@@ -112,8 +112,8 @@ class ArgsParser:
             k: rule.parse_user_values() for k,rule in self._current_node.rules.items()
         }
         errors = [
-            v.err_message for v in self._user_values.values()
-            if isinstance(v, fy.WrongUserValue)
+            v.get_error() for v in self._user_values.values()
+            if isinstance(v, fy.UserValue) and v.is_wrong() # [WIP]
         ]
         if not errors: return
 

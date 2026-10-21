@@ -4,8 +4,8 @@ from ._misc.help_str import HelpStr
 from ._misc.freya_syntax_error import FreyaSyntaxError
 from ._misc.color import Color
 
-from ._user_values.wrong_user_value import WrongUserValue
 from ._user_values.path_assertion import PathAssertion
+from ._user_values.user_value import UserValue
 
 from ._arguments.arg_count import ArgCount
 from ._arguments.arg_dtype import ArgDType

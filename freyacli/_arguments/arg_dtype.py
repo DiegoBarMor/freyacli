@@ -32,7 +32,7 @@ class ArgDType(Enum):
         return self != ArgDType.NONE and self != ArgDType.TOGGLE
 
     # --------------------------------------------------------------------------
-    def parse_value(self, arg_name: str, raw_value: str) -> fy.WrongUserValue |\
+    def parse_value(self, arg_name: str, raw_value: str) -> fy.UserValue |\
         bool|str|Path|int|float:
 
         if self == ArgDType.NONE:
@@ -49,13 +49,13 @@ class ArgDType(Enum):
 
         if self == ArgDType.INT:
             try: return int(raw_value)
-            except ValueError: return fy.WrongUserValue(
+            except ValueError: return fy.UserValue.init_wrong(
                 f"Argument '{arg_name}' expected an integer value, but got '{raw_value}'."
             )
 
         if self == ArgDType.FLOAT:
             try: return float(raw_value)
-            except ValueError: return fy.WrongUserValue(
+            except ValueError: return fy.UserValue.init_wrong(
                 f"Argument '{arg_name}' expected a float value, but got '{raw_value}'."
             )
 
