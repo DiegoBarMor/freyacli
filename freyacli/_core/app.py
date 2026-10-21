@@ -53,7 +53,7 @@ class App(ABC):
     def get_arg_bool(self, key: str, default = None) -> bool:
         """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier).
         Flags with no value attached always store a boolean value."""
-        return self.args.get_arg_value(key, default)
+        return self.args.get_arg_value(key, default)._data_toggle # [WIP]
 
 
     # --------------------------------------------------------------------------
@@ -62,8 +62,8 @@ class App(ABC):
         When an optional positional value is absent, the actual stored value will be `None`.
         When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
         val = self.args.get_arg_value(key, default)
-        if not is_list: return val
-        return self._val_as_list(val, default)
+        if not is_list: return val._data_str # [WIP]
+        return [v._data_str for v in self._val_as_list(val, default)]  # [WIP]
 
 
     # --------------------------------------------------------------------------
@@ -78,8 +78,8 @@ class App(ABC):
         `allow_none` is passed to the assertion function, and it allows `None` values to pass the assertion if set to `True`.
         """
         val = self.args.get_arg_value(key, default)
-        if not is_list: return self._asserted_path(val, assertion, allow_none)
-        return [self._asserted_path(v, assertion, allow_none) for v in self._val_as_list(val, default)]
+        if not is_list: return self._asserted_path(val._data_path, assertion, allow_none) # [WIP]
+        return [self._asserted_path(v._data_path, assertion, allow_none) for v in self._val_as_list(val, default)] # [WIP]
 
 
     # --------------------------------------------------------------------------
@@ -88,8 +88,8 @@ class App(ABC):
         When an optional positional value is absent, the actual stored value will be `None`.
         When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
         val = self.args.get_arg_value(key, default)
-        if not is_list: return val
-        return self._val_as_list(val, default)
+        if not is_list: return val._data_int # [WIP]
+        return [v._data_int for v in self._val_as_list(val, default)]  # [WIP]
 
 
     # --------------------------------------------------------------------------
@@ -98,8 +98,8 @@ class App(ABC):
         When an optional positional value is absent, the actual stored value will be `None`.
         When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
         val = self.args.get_arg_value(key, default)
-        if not is_list: return val
-        return self._val_as_list(val, default)
+        if not is_list: return val._data_float # [WIP]
+        return [v._data_float for v in self._val_as_list(val, default)]  # [WIP]
 
 
     # --------------------------------------------------------------------------

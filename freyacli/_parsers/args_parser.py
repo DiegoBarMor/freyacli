@@ -18,7 +18,7 @@ class ArgsParser:
     def __init__(self, fy_parser: fy.FreyaParser, app_name: str, version: str):
         self._app_name: str = app_name
         self._version: str = version
-        self._user_values = {}
+        self._user_values: dict[str, fy.UserValue | list[fy.UserValue]] = {}
 
         self._fy_parser: fy.FreyaParser = fy_parser
         self._current_node: fy.Subcommand = fy_parser.tree
@@ -47,7 +47,7 @@ class ArgsParser:
 
 
     # --------------------------------------------------------------------------
-    def arg_values(self) -> list:
+    def arg_values(self) -> list[fy.UserValue]:
         return list(self._user_values.values())
 
 
@@ -56,8 +56,11 @@ class ArgsParser:
         if key not in self._user_values:
             raise KeyError(f"Key '{key}' not found in the stored argument values.")
         val = self._user_values[key]
-        if val is None: return default
-        if isinstance(val, list) and not val: return default
+        if isinstance(val, list):
+            if not val: return default
+            return val
+
+        if val.is_empty(): return default # [WIP]
         return val
 
     # --------------------------------------------------------------------------
@@ -112,8 +115,7 @@ class ArgsParser:
             k: rule.parse_user_values() for k,rule in self._current_node.rules.items()
         }
         errors = [
-            v.get_error() for v in self._user_values.values()
-            if isinstance(v, fy.UserValue) and v.is_wrong() # [WIP]
+            v.get_error() for v in self._user_values.values() if v.is_wrong()
         ]
         if not errors: return
 
