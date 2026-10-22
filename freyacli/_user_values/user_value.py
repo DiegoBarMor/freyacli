@@ -58,7 +58,10 @@ class UserValue:
 
         if dtype == fy.ArgDType.TOGGLE:
             if not raw_values: return obj
-            raise fy.FreyaSyntaxError(f"Argument '{arg_name}' is a flag of type TOGGLE and doesn't accept any values, but somehow got {raw_values}.")
+            raise fy.FreyaSyntaxError(
+                "`UserValue.init_parse` method shouldn't handle flags of type TOGGLE. " +\
+                f"It somehow got argument '{arg_name}' of type TOGGLE with raw_values={raw_values}."
+            )
 
         raise fy.FreyaSyntaxError(f"Unkown dtype '{dtype}' for argument '{arg_name}'.")
 
@@ -124,6 +127,10 @@ class UserValue:
     # --------------------------------------------------------------------------
     def get_floats(self) -> list[float]:
         return self._data_float
+
+    # --------------------------------------------------------------------------
+    def set_bool(self, val: bool) -> None:
+        self._data_toggle = val
 
 
 # //////////////////////////////////////////////////////////////////////////////

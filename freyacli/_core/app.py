@@ -56,8 +56,6 @@ class App(ABC):
         (since the flag was used, but no value was attached).
         """
         uvs = self.args.get_user_values(key)
-        print("!!!", uvs.__dict__)
-
         uvs.assert_dtype(fy.ArgDType.TOGGLE, key)
         return uvs.get_bool()
 
@@ -92,7 +90,7 @@ class App(ABC):
         (and no other default value is specified in the FYR file).
         Otherwise, asserts the validity of the paths using `assertion`.
         """
-        vals = self.arg_path_list(key)
+        vals = self.arg_path_list(key, assertion)
         return vals[0] if vals else default
 
 

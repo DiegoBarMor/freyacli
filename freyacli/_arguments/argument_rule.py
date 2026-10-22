@@ -86,15 +86,12 @@ class ArgumentRule:
             s = 's' if self.arg_count.min_nvalues > 1 else ''
             return fy.UserValue.init_wrong(f"Expected {self.arg_count.min_nvalues} value{s} for argument '{self.name}', but got {len(self._raw_user_values)}.")
 
-        parsed_values = fy.UserValue.init_parse(self.arg_dtype, self._raw_user_values, self.name)
+        if self.arg_dtype is fy.ArgDType.TOGGLE:
+            return fy.UserValue.init_toggle(self._was_used)
 
-        if not parsed_values:
-            if self._was_used: return fy.UserValue.init_toggle(True)  # used flag has value of "True"
-            if self.is_positional: return fy.UserValue.init_empty() # unused optional positional argument has empty user value
-            if self.arg_dtype is fy.ArgDType.TOGGLE: return fy.UserValue.init_toggle(False) # unused toggle flag has value of "False"
-            return fy.UserValue.init_empty() # unused optional flag with arguments has empty user value
-
-        return parsed_values
+        uvs = fy.UserValue.init_parse(self.arg_dtype, self._raw_user_values, self.name)
+        uvs.set_bool(self._was_used) # when an optional flag value is absent, toggle will be considered `True` (since the flag was used, but no value was attached).
+        return uvs
 
 
     # --------------------------------------------------------------------------
