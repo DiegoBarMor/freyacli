@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import freyacli as fy
 
 # //////////////////////////////////////////////////////////////////////////////
@@ -49,8 +47,11 @@ class ArgumentRule:
 
 
     # --------------------------------------------------------------------------
-    def register_user_value(self, value: str) -> bool:
-        """Returns `True` when the argument is "full" (i.e. won't accept any more user values)"""
+    def register_raw_user_value(self, value: str) -> None:
+        """
+        Stores a raw user value (as a string) for processing it later.
+        This operation 'touches' the argument rule.
+        """
 
         if self.arg_dtype in (fy.ArgDType.INT, fy.ArgDType.FLOAT):
             ### for numeric types, split the raw user values, just in case they are received as a single space-separated string
@@ -62,11 +63,10 @@ class ArgumentRule:
             self.arg_count.n_user_values += 1
 
         self.touch()
-        return self.arg_count.is_full()
 
 
     # --------------------------------------------------------------------------
-    def touch(self):
+    def touch(self) -> None:
         """
         Marks the argument as used even if it doesn't receive any user values.
         Useful when dealing with flags with optional keyword arguments
@@ -75,33 +75,23 @@ class ArgumentRule:
 
 
     # --------------------------------------------------------------------------
-    def parse_user_values(self) -> None | fy.ArgDTypeError |\
-        bool|str|Path|int|float |\
-        list[bool]|list[str]|list[Path]|list[int]|list[float]:
+    def parse_user_values(self) -> fy.UserValues:
         """
-        Parses the raw user values according to the argument type (e.g. `INT`, `STR`, etc.) and returns the parsed values in the respective types.
-        When the argument accepts only 1 value, the value is returned directly instead of a `list`.
-        A boolean is returned for flags of `TOGGLE` type. Alternatively, `True` can be returned when a flag is passed but its optional keyword argument isn't.
-        An `ArgDTypeError` instance is returned when parsing fails due to invalid user input.
-        `None` is returned for non-used optional arguments, be it positional or non-toggle flags (i.e. those that should receive values).
+        Parses the raw user values according to the argument type (e.g. `INT`, `STR`, etc.) and returns the parsed values encapsulated inside a `fy.UserValues` instance.
+        A boolean is stored for flags of `TOGGLE` type. Alternatively, `True` can be stored when a flag is passed but its optional keyword argument isn't.
+        A wrong `UserValues` instance is returned when parsing fails due to invalid user input.
+        Empty `UserValues` is returned for non-used optional arguments, be it positional or non-toggle flags (i.e. those that should receive values).
         """
         if self._was_used and not self.has_enough_values():
             s = 's' if self.arg_count.min_nvalues > 1 else ''
-            return fy.ArgDTypeError(f"Expected {self.arg_count.min_nvalues} value{s} for argument '{self.name}', but got {len(self._raw_user_values)}.")
+            return fy.UserValues.init_wrong(f"Expected {self.arg_count.min_nvalues} value{s} for argument '{self.name}', but got {len(self._raw_user_values)}.")
 
-        parsed_values = [
-            self.arg_dtype.parse_value(self.name, raw_value)
-            for raw_value in self._raw_user_values
-        ]
+        if self.arg_dtype is fy.ArgDType.TOGGLE:
+            return fy.UserValues.init_toggle(self._was_used)
 
-        if not parsed_values:
-            if self._was_used: return True # used flag has value of "True"
-            if self.is_positional: return None # unused optional positional argument has value of "None"
-            if self.arg_dtype is fy.ArgDType.TOGGLE: return False # unused toggle flag has value of "False"
-            return None # unused optional flag with arguments has value of "None"
-
-        if self.arg_count.needs_single_value(): return parsed_values[0]
-        return parsed_values
+        uvs = fy.UserValues.init_parse(self.arg_dtype, self._raw_user_values, self.name)
+        uvs.set_bool(self._was_used) # when an optional flag value is absent, toggle will be considered `True` (since the flag was used, but no value was attached).
+        return uvs
 
 
     # --------------------------------------------------------------------------

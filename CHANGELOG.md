@@ -1,4 +1,13 @@
 # Changelog
+
+## [0.5.0] - 2026-10-22
+- Refactored the handling of user-provided values.
+    - Introduced the `UserValues` class.
+- Cleaned up the App *argument getter* and *path assertion* methods.
+- Removed `ANY` flag type.
+    - `STR` type shold be considered as the default generic type for values provided via CLI.
+
+
 ## [0.4.5] - 2026-10-18
 - Bugfix in path assertion.
 - Bugfix in `-h` flag usage.

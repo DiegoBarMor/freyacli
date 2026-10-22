@@ -31,9 +31,9 @@ class FreyacliUtilsApp(fy.App):
 
     # --------------------------------------------------------------------------
     def _run_summary(self):
-        app_name = self.get_arg_str("app_name")
-        path_fyr = self.get_arg_path("path_fyr", assertion = fy.PathAssertion.FILE_IN)
-        path_fyh = self.get_arg_path("path_fyh", assertion = fy.PathAssertion.FILE_IN)
+        app_name = self.arg_str("app_name")
+        path_fyr = self.arg_path("path_fyr", assertion = fy.PathAssertion.FILE_IN)
+        path_fyh = self.arg_path("path_fyh", assertion = fy.PathAssertion.FILE_IN)
 
         _fy_parser = fy.FreyaParser.from_files(path_fyr, path_fyh)
         _fy_parser.summarize_usage(app_name)

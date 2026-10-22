@@ -18,7 +18,7 @@ class ArgsParser:
     def __init__(self, fy_parser: fy.FreyaParser, app_name: str, version: str):
         self._app_name: str = app_name
         self._version: str = version
-        self._user_values = {}
+        self._user_values: dict[str, fy.UserValues] = {}
 
         self._fy_parser: fy.FreyaParser = fy_parser
         self._current_node: fy.Subcommand = fy_parser.tree
@@ -47,31 +47,24 @@ class ArgsParser:
 
 
     # --------------------------------------------------------------------------
-    def arg_values(self) -> list:
-        return list(self._user_values.values())
-
-
-    # --------------------------------------------------------------------------
-    def get_arg_value(self, key: str, default = None):
+    def get_user_values(self, key: str) -> fy.UserValues:
         if key not in self._user_values:
             raise KeyError(f"Key '{key}' not found in the stored argument values.")
-        val = self._user_values[key]
-        if val is None: return default
-        if isinstance(val, list) and not val: return default
-        return val
+        return self._user_values[key]
+
 
     # --------------------------------------------------------------------------
     def help_and_exit(self, exit_code: int, *err_messages: str):
-        err_messages: list = list(err_messages)
-        for i,err in enumerate(err_messages):
-            err_messages[i] = fy.Color.red("ERROR: ", bright = False) + fy.Color.red(err)
-
-        if err_messages: err_messages.append("")
+        messages = [
+            fy.Color.red("ERROR: ", bright = False) + fy.Color.red(err)
+            for err in err_messages
+        ]
+        if messages: messages.append("")
 
         print('\n'.join((
             f"{self._app_name} ({fy.Color.yellow('v'+self._version)}). Usage:",
             self._current_node.str_help_long(self.py_name),
-            *err_messages,
+            *messages,
         )))
         exit(exit_code)
 
@@ -103,7 +96,7 @@ class ArgsParser:
         for rule in self._current_node.rules.values():
             if rule._raw_user_values: continue
             if rule.default_value:
-                rule.register_user_value(rule.default_value)
+                rule.register_raw_user_value(rule.default_value)
                 continue
             if rule.is_optional: continue
             self.help_and_exit(1, f"Missing required argument: '{rule.name}'.")
@@ -112,8 +105,7 @@ class ArgsParser:
             k: rule.parse_user_values() for k,rule in self._current_node.rules.items()
         }
         errors = [
-            v.err_message for v in self._user_values.values()
-            if isinstance(v, fy.ArgDTypeError)
+            v.get_error() for v in self._user_values.values() if v.is_wrong()
         ]
         if not errors: return
 
@@ -188,8 +180,8 @@ class ArgsParser:
             self._parse_arg_flag_name(arg, flag, is_short_name)
             return
 
-        flag_is_full = self._current_rule.register_user_value(arg)
-        if flag_is_full:
+        self._current_rule.register_raw_user_value(arg)
+        if self._current_rule.arg_count.is_full():
             self._set_current_rule(_RULE_NONE)
             self._processing_flag_val = False
 
@@ -201,8 +193,8 @@ class ArgsParser:
                 self.help_and_exit(1, f"Unexpected positional argument: '{arg}'.")
             self._set_current_rule(self._pending_posit.pop(0))
 
-        posit_is_full = self._current_rule.register_user_value(arg)
-        if posit_is_full:
+        self._current_rule.register_raw_user_value(arg)
+        if self._current_rule.arg_count.is_full():
             self._set_current_rule(_RULE_NONE)
 
 
@@ -222,7 +214,7 @@ class ArgsParser:
         if not rule.default_value:
             self.help_and_exit(1, f"Expected a value for the previous flag '--{rule.flag_long}', before using '{flag}' (provided as '{arg}').")
 
-        rule.register_user_value(rule.default_value)
+        rule.register_raw_user_value(rule.default_value)
         self._processing_flag_val = False
         self._set_current_rule(_RULE_NONE)
 

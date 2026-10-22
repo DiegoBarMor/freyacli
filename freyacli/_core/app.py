@@ -40,7 +40,7 @@ class App(ABC):
 
 
     # --------------------------------------------------------------------------
-    def arg_keys(self) -> list[str]:
+    def get_arg_keys(self) -> list[str]:
         return self.args.arg_keys()
 
 
@@ -50,75 +50,106 @@ class App(ABC):
 
 
     # --------------------------------------------------------------------------
-    def get_arg_bool(self, key: str, default = None) -> bool:
-        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier).
-        Flags with no value attached always store a boolean value."""
-        return self.args.get_arg_value(key, default)
-
-
-    # --------------------------------------------------------------------------
-    def get_arg_str(self, key: str, default = None, is_list: bool = False) -> str:
-        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier).
-        When an optional positional value is absent, the actual stored value will be `None`.
-        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
-        val = self.args.get_arg_value(key, default)
-        if not is_list: return val
-        return self._val_as_list(val, default)
-
-
-    # --------------------------------------------------------------------------
-    def get_arg_path(self,
-            key: str, default = None, is_list: bool = False,
-            assertion: fy.PathAssertion | None = None, allow_none: bool = False
-        ) -> Path:
+    def arg_toggle(self, key: str) -> bool:
         """
-        When an optional positional value is absent, the actual stored value will be `None`.
-        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached).
-        If `assertion` is provided, the returned path(s) will be asserted with the provided assertion function. If the assertion fails, an error message will be printed and the app will exit.
-        `allow_none` is passed to the assertion function, and it allows `None` values to pass the assertion if set to `True`.
+        When an optional flag value is absent, this will return `True`
+        (since the flag was used, but no value was attached).
         """
-        val = self.args.get_arg_value(key, default)
-        if not is_list: return self._asserted_path(val, assertion, allow_none)
-        return [self._asserted_path(v, assertion, allow_none) for v in self._val_as_list(val, default)]
+        uvs = self.args.get_user_values(key)
+        uvs.assert_dtype(fy.ArgDType.TOGGLE, key)
+        return uvs.get_bool()
 
 
     # --------------------------------------------------------------------------
-    def get_arg_int(self, key: str, default = None, is_list: bool = False) -> int:
-        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier).
-        When an optional positional value is absent, the actual stored value will be `None`.
-        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
-        val = self.args.get_arg_value(key, default)
-        if not is_list: return val
-        return self._val_as_list(val, default)
+    def arg_str(self, key: str, default: str = None) -> str | None:
+        """
+        Returns `default` when an optional positional value is absent
+        (and no other default value is specified in the FYR file).
+        """
+        vals = self.arg_str_list(key)
+        return vals[0] if vals else default
 
 
     # --------------------------------------------------------------------------
-    def get_arg_float(self, key: str, default = None, is_list: bool = False) -> float:
-        """This method is for helping with intended usage, **no asertion is performed** (value was already parsed/asserted earlier).
-        When an optional positional value is absent, the actual stored value will be `None`.
-        When an optional flag value is absent, the actual stored value will be `True` (since the flag was used, but no value was attached)."""
-        val = self.args.get_arg_value(key, default)
-        if not is_list: return val
-        return self._val_as_list(val, default)
+    def arg_str_list(self, key: str) -> list[str]:
+        """
+        Returns an empty list when optional positional values are absent.
+        """
+        uvs = self.args.get_user_values(key)
+        uvs.assert_dtype(fy.ArgDType.STR, key)
+        return uvs.get_strs()
 
 
     # --------------------------------------------------------------------------
-    def _asserted_path(self,
-        path: Path|None, assertion: fy.PathAssertion|None, allow_none: bool
-    ) -> Path|None:
-        if assertion is None: return path
-        err = assertion(path, allow_none)
-        if isinstance(err, fy.ArgDTypeError):
-            self.help_and_exit(1, err.err_message)
-        return path
+    def arg_path(self,
+        key: str, default: Path = None,
+        assertion: fy.PathAssertion = fy.PathAssertion.NO_ASSERTION,
+    ) -> Path | None:
+        """
+        Returns `default` when an optional positional value is absent
+        (and no other default value is specified in the FYR file).
+        Otherwise, asserts the validity of the paths using `assertion`.
+        """
+        vals = self.arg_path_list(key, assertion)
+        return vals[0] if vals else default
 
 
     # --------------------------------------------------------------------------
-    @staticmethod
-    def _val_as_list(val, default):
-        if val is None:
-            return default if isinstance(default, list) else [default]
-        return val if isinstance(val, list) else [val]
+    def arg_path_list(self,
+        key: str,
+        assertion: fy.PathAssertion = fy.PathAssertion.NO_ASSERTION,
+    ) -> Path | None:
+        """
+        Returns an empty list when optional positional values are absent.
+        Asserts the validity of the paths using `assertion`.
+        """
+        uvs = self.args.get_user_values(key)
+        uvs.assert_dtype(fy.ArgDType.PATH, key)
+
+        errs = assertion(uvs)
+        if errs: self.help_and_exit(1, *(err.get_error() for err in errs))
+
+        return uvs.get_paths()
+
+
+    # --------------------------------------------------------------------------
+    def arg_int(self, key: int, default: int = None) -> int | None:
+        """
+        Returns `default` when an optional positional value is absent
+        (and no other default value is specified in the FYR file).
+        """
+        vals = self.arg_int_list(key)
+        return vals[0] if vals else default
+
+
+    # --------------------------------------------------------------------------
+    def arg_int_list(self, key: int) -> list[int]:
+        """
+        Returns an empty list when optional positional values are absent.
+        """
+        uvs = self.args.get_user_values(key)
+        uvs.assert_dtype(fy.ArgDType.INT, key)
+        return uvs.get_ints()
+
+
+    # --------------------------------------------------------------------------
+    def arg_float(self, key: float, default: float = None) -> float | None:
+        """
+        Returns `default` when an optional positional value is absent
+        (and no other default value is specified in the FYR file).
+        """
+        vals = self.arg_float_list(key)
+        return vals[0] if vals else default
+
+
+    # --------------------------------------------------------------------------
+    def arg_float_list(self, key: float) -> list[float]:
+        """
+        Returns an empty list when optional positional values are absent.
+        """
+        uvs = self.args.get_user_values(key)
+        uvs.assert_dtype(fy.ArgDType.FLOAT, key)
+        return uvs.get_floats()
 
 
 # //////////////////////////////////////////////////////////////////////////////
