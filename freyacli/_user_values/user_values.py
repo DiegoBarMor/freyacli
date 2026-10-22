@@ -3,7 +3,7 @@ from pathlib import Path
 import freyacli as fy
 
 # //////////////////////////////////////////////////////////////////////////////
-class UserValue:
+class UserValues:
     def __init__(self):
         self.dtype: fy.ArgDType = fy.ArgDType.NONE
 
@@ -18,7 +18,7 @@ class UserValue:
 
     # --------------------------------------------------------------------------
     @classmethod
-    def init_parse(cls, dtype: fy.ArgDType, raw_values: list[str], arg_name: str) -> "UserValue":
+    def init_parse(cls, dtype: fy.ArgDType, raw_values: list[str], arg_name: str) -> "UserValues":
         obj = cls()
         obj.dtype = dtype
 
@@ -30,7 +30,7 @@ class UserValue:
             try: obj._data_path = [Path(v) for v in raw_values]
             except TypeError as e:
                 idx = str(e).find("not")
-                return fy.UserValue.init_wrong(
+                return fy.UserValues.init_wrong(
                     f"The specified path with type '{str(e)[idx:]}' is not a valid path."
                 )
             return obj
@@ -39,7 +39,7 @@ class UserValue:
             try: obj._data_int = [int(v) for v in raw_values]
             except ValueError as e:
                 idx = str(e).find(':')
-                return fy.UserValue.init_wrong(
+                return fy.UserValues.init_wrong(
                     f"Argument '{arg_name}' expected an integer value, but got{str(e)[idx:]}"
                 )
             return obj
@@ -48,7 +48,7 @@ class UserValue:
             try: obj._data_float = [float(v) for v in raw_values]
             except ValueError:
                 idx = str(e).find(':')
-                return fy.UserValue.init_wrong(
+                return fy.UserValues.init_wrong(
                 f"Argument '{arg_name}' expected a float value, but got{str(e)[idx:]}"
             )
             return obj
@@ -59,7 +59,7 @@ class UserValue:
         if dtype == fy.ArgDType.TOGGLE:
             if not raw_values: return obj
             raise fy.FreyaSyntaxError(
-                "`UserValue.init_parse` method shouldn't handle flags of type TOGGLE. " +\
+                "`UserValues.init_parse` method shouldn't handle flags of type TOGGLE. " +\
                 f"It somehow got argument '{arg_name}' of type TOGGLE with raw_values={raw_values}."
             )
 
@@ -67,13 +67,13 @@ class UserValue:
 
     # --------------------------------------------------------------------------
     @classmethod
-    def init_empty(cls) -> "UserValue":
-        """Same as simply instantiating via `UserValue()`. Added for consistency with other constructors."""
+    def init_empty(cls) -> "UserValues":
+        """Same as simply instantiating via `UserValues()`. Added for consistency with other constructors."""
         return cls()
 
     # --------------------------------------------------------------------------
     @classmethod
-    def init_toggle(cls, value: bool) -> "UserValue":
+    def init_toggle(cls, value: bool) -> "UserValues":
         obj = cls()
         obj.dtype = fy.ArgDType.TOGGLE
         obj._data_toggle = value
@@ -81,7 +81,7 @@ class UserValue:
 
     # --------------------------------------------------------------------------
     @classmethod
-    def init_wrong(cls, err_msg: str = "") -> "UserValue":
+    def init_wrong(cls, err_msg: str = "") -> "UserValues":
         obj = cls()
         obj._is_wrong = True
         obj._err_msg = err_msg

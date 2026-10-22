@@ -12,11 +12,11 @@ class PathAssertion(Enum):
     NO_ASSERTION = auto()
 
     # --------------------------------------------------------------------------
-    def __call__(self, uvs: fy.UserValue) -> list[fy.UserValue]:
+    def __call__(self, uvs: fy.UserValues) -> list[fy.UserValues]:
         """
-        Asserts `Path` values inside a `fy.UserValue` instance.
-        Returns a list of found errors, if any, wrapped inside the faulty `fy.UserValue` instances.
-        An empty `fy.UserValue` isn't considered an error (though this should never happen when assertions are called in `fy.App`).
+        Asserts `Path` values inside a `fy.UserValues` instance.
+        Returns a list of found errors, if any, wrapped inside the faulty `fy.UserValues` instances.
+        An empty `fy.UserValues` isn't considered an error (though this should never happen when assertions are called in `fy.App`).
         An empty list is returned when no errors are found.
         """
         if self == self.NO_ASSERTION:      func = lambda _: None
@@ -30,26 +30,26 @@ class PathAssertion(Enum):
 
     # --------------------------------------------------------------------------
     @classmethod
-    def _assert_file_in(cls, path_file: Path) -> fy.UserValue | None:
+    def _assert_file_in(cls, path_file: Path) -> fy.UserValues | None:
         if not path_file.exists():
-            return fy.UserValue.init_wrong(f"The specified file path '{path_file}' does not exist.")
+            return fy.UserValues.init_wrong(f"The specified file path '{path_file}' does not exist.")
         if path_file.is_dir():
-            return fy.UserValue.init_wrong(f"The specified file path '{path_file}' is a folder.")
+            return fy.UserValues.init_wrong(f"The specified file path '{path_file}' is a folder.")
 
 
     # --------------------------------------------------------------------------
     @classmethod
-    def _assert_file_out(cls, path_file: Path) -> fy.UserValue | None:
+    def _assert_file_out(cls, path_file: Path) -> fy.UserValues | None:
         if path_file.is_dir():
-            return fy.UserValue.init_wrong(f"The specified file path '{path_file}' is a folder.")
+            return fy.UserValues.init_wrong(f"The specified file path '{path_file}' is a folder.")
         os.makedirs(path_file.parent, exist_ok = True)
 
 
     # --------------------------------------------------------------------------
     @classmethod
-    def _assert_dir_out(cls, path_dir: Path) -> fy.UserValue | None:
+    def _assert_dir_out(cls, path_dir: Path) -> fy.UserValues | None:
         if path_dir.is_file():
-            return fy.UserValue.init_wrong(f"The specified folder path '{path_dir}' is a file.")
+            return fy.UserValues.init_wrong(f"The specified folder path '{path_dir}' is a file.")
         os.makedirs(path_dir, exist_ok = True)
 
 

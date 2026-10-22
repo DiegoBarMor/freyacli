@@ -5,7 +5,7 @@ from ._misc.freya_syntax_error import FreyaSyntaxError
 from ._misc.color import Color
 
 from ._user_values.path_assertion import PathAssertion
-from ._user_values.user_value import UserValue
+from ._user_values.user_values import UserValues
 
 from ._arguments.arg_count import ArgCount
 from ._arguments.arg_dtype import ArgDType

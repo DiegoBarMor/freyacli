@@ -75,21 +75,21 @@ class ArgumentRule:
 
 
     # --------------------------------------------------------------------------
-    def parse_user_values(self) -> fy.UserValue:
+    def parse_user_values(self) -> fy.UserValues:
         """
-        Parses the raw user values according to the argument type (e.g. `INT`, `STR`, etc.) and returns the parsed values encapsulated inside a `fy.UserValue` instance.
+        Parses the raw user values according to the argument type (e.g. `INT`, `STR`, etc.) and returns the parsed values encapsulated inside a `fy.UserValues` instance.
         A boolean is stored for flags of `TOGGLE` type. Alternatively, `True` can be stored when a flag is passed but its optional keyword argument isn't.
-        A wrong `UserValue` instance is returned when parsing fails due to invalid user input.
-        Empty `UserValue` is returned for non-used optional arguments, be it positional or non-toggle flags (i.e. those that should receive values).
+        A wrong `UserValues` instance is returned when parsing fails due to invalid user input.
+        Empty `UserValues` is returned for non-used optional arguments, be it positional or non-toggle flags (i.e. those that should receive values).
         """
         if self._was_used and not self.has_enough_values():
             s = 's' if self.arg_count.min_nvalues > 1 else ''
-            return fy.UserValue.init_wrong(f"Expected {self.arg_count.min_nvalues} value{s} for argument '{self.name}', but got {len(self._raw_user_values)}.")
+            return fy.UserValues.init_wrong(f"Expected {self.arg_count.min_nvalues} value{s} for argument '{self.name}', but got {len(self._raw_user_values)}.")
 
         if self.arg_dtype is fy.ArgDType.TOGGLE:
-            return fy.UserValue.init_toggle(self._was_used)
+            return fy.UserValues.init_toggle(self._was_used)
 
-        uvs = fy.UserValue.init_parse(self.arg_dtype, self._raw_user_values, self.name)
+        uvs = fy.UserValues.init_parse(self.arg_dtype, self._raw_user_values, self.name)
         uvs.set_bool(self._was_used) # when an optional flag value is absent, toggle will be considered `True` (since the flag was used, but no value was attached).
         return uvs
 

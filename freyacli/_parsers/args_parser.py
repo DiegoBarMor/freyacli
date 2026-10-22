@@ -18,7 +18,7 @@ class ArgsParser:
     def __init__(self, fy_parser: fy.FreyaParser, app_name: str, version: str):
         self._app_name: str = app_name
         self._version: str = version
-        self._user_values: dict[str, fy.UserValue] = {}
+        self._user_values: dict[str, fy.UserValues] = {}
 
         self._fy_parser: fy.FreyaParser = fy_parser
         self._current_node: fy.Subcommand = fy_parser.tree
@@ -47,7 +47,7 @@ class ArgsParser:
 
 
     # --------------------------------------------------------------------------
-    def get_user_values(self, key: str) -> fy.UserValue:
+    def get_user_values(self, key: str) -> fy.UserValues:
         if key not in self._user_values:
             raise KeyError(f"Key '{key}' not found in the stored argument values.")
         return self._user_values[key]
